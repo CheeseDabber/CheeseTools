@@ -1,0 +1,5 @@
+﻿<Project>
+  <PropertyGroup>
+    <OutputPath>$(AppData)/OuterWildsModManager/OWML/Mods/CheeseRunner1.CheeseTools</OutputPath>
+  </PropertyGroup>
+</Project>
