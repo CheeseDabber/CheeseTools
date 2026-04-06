@@ -1,4 +1,115 @@
 {
   "$schema": "https://raw.githubusercontent.com/ow-mods/owml/master/schemas/config_schema.json",
-  "enabled": true
+  "enabled": true,
+  "settings": {
+    "== Settings ==": {
+      "type": "separator"
+    },
+    "Create Launch Codes Save": false,
+    "Show Loop Time": false,
+    "Show Sectors": false,
+    "Mark Stranger Location": false,
+    "DreamWorld Enter Campfire": {
+      "type": "selector",
+      "value": "Cinder Isles",
+      "options": [
+        "Cinder Isles",
+        "River Lowlands",
+        "Hidden Gorge",
+        "Reservoir"
+      ]
+    },
+    "== Timers ==": {
+      "type": "separator"
+    },
+    "ATP Enter Timer": false,
+    "ATP Interior Timer": false,
+    "ATP Exit Timer": false,
+    "Ultimate Feldsparring Timer": false,
+    "The Eye Timer": false,
+    "Observe Timer": false,
+    "Clone Timer": false,
+    "Instrument Hunt Timer": false,
+    "== Player Teleport ==": {
+      "type": "separator"
+    },
+    "Player Teleport 1 Planet": {
+      "type": "selector",
+      "value": "Timber Hearth",
+      "options": [
+        "Sun",
+        "Sun Station",
+        "Ember Twin",
+        "Ash Twin",
+        "The Interloper",
+        "Dark Bramble",
+        "Giant's Deep",
+        "Orbital Probe Cannon",
+        "Quantum Moon",
+        "Brittle Hollow",
+        "Hollow's Lantern",
+        "Timber Hearth",
+        "The Attlerock",
+        "The Stranger",
+        "DreamWorld",
+        "EyeOfTheUniverse"
+      ]
+    },
+    "Player Teleport 1 Position": "0.0, 0.0, 0.0",
+    "Player Teleport 1 Rotation": "0.0, 0.0, 0.0",
+    " ": {
+      "type": "separator"
+    },
+    "Player Teleport 2 Planet": {
+      "type": "selector",
+      "value": "Timber Hearth",
+      "options": [
+        "Sun",
+        "Sun Station",
+        "Ember Twin",
+        "Ash Twin",
+        "The Interloper",
+        "Dark Bramble",
+        "Giant's Deep",
+        "Orbital Probe Cannon",
+        "Quantum Moon",
+        "Brittle Hollow",
+        "Hollow's Lantern",
+        "Timber Hearth",
+        "The Attlerock",
+        "The Stranger",
+        "DreamWorld",
+        "EyeOfTheUniverse"
+      ]
+    },
+    "Player Teleport 2 Position": "0.0, 0.0, 0.0",
+    "Player Teleport 2 Rotation": "0.0, 0.0, 0.0",
+    "  ": {
+      "type": "separator"
+    },
+    "Player Teleport 3 Planet": {
+      "type": "selector",
+      "value": "Timber Hearth",
+      "options": [
+        "Sun",
+        "Sun Station",
+        "Ember Twin",
+        "Ash Twin",
+        "The Interloper",
+        "Dark Bramble",
+        "Giant's Deep",
+        "Orbital Probe Cannon",
+        "Quantum Moon",
+        "Brittle Hollow",
+        "Hollow's Lantern",
+        "Timber Hearth",
+        "The Attlerock",
+        "The Stranger",
+        "DreamWorld",
+        "EyeOfTheUniverse"
+      ]
+    },
+    "Player Teleport 3 Position": "0.0, 0.0, 0.0",
+    "Player Teleport 3 Rotation": "0.0, 0.0, 0.0"
+  }
 }
