@@ -6,8 +6,8 @@
     "Infinite Oxygen": false,
     "Create Launch Codes Save": false,
     "Show Loop Time": false,
-    "Show Sectors": false,
     "Mark Stranger": false,
+    "Show Sectors": false,
 
     // Binds
     "": { "type": "separator" },

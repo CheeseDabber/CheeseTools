@@ -10,7 +10,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // planned:
-// - dude an always enable escape feature would be fire
 // - ship invincibility
 // - player invincibility
 // - fast load new expedition keybind
@@ -131,6 +130,7 @@ namespace CheeseTools {
 			UpdateSleepText();
 			UpdateStrangerMarker();
 			ScreenTimerController.Update();
+			Locator.GetPauseCommandListener().enabled = true;
 		}
 
 		private void CheckInput() {
