@@ -2,13 +2,22 @@
   "$schema": "https://raw.githubusercontent.com/ow-mods/owml/master/schemas/config_schema.json",
   "enabled": true,
   "settings": {
-    "== Settings ==": {
-      "type": "separator"
-    },
+    "Infinite Fuel": false,
+    "Infinite Oxygen": false,
     "Create Launch Codes Save": false,
     "Show Loop Time": false,
     "Show Sectors": false,
-    "Mark Stranger Location": false,
+    "Mark Stranger": false,
+
+    // Binds
+    "": { "type": "separator" },
+    "Log Names Of Pressed Keys": false,
+    "Toggle Suit": "Slash+T",
+    "Toggle Speedup": "Slash+Backslash",
+    "Log Player Location": "Slash+RightBracket",
+    "Log Ship Location": "Slash+LeftBracket",
+    "Teleport Ship To Player": "Slash+Backquote",
+    "Enter/Exit DreamWorld": "Slash+L",
     "DreamWorld Enter Campfire": {
       "type": "selector",
       "value": "Cinder Isles",
@@ -19,97 +28,142 @@
         "Reservoir"
       ]
     },
-    "== Timers ==": {
-      "type": "separator"
-    },
+
+    // Practice States
+    " ": { "type": "separator" },
+    "  ": { "type": "separator" },
+    "ATP Practice State": "P+Digit1",
+    "ATP Loop Time": "441.5",
     "ATP Enter Timer": false,
     "ATP Interior Timer": false,
     "ATP Exit Timer": false,
+
+    "   ": { "type": "separator" },
+    "Ultimate Feldsparring Practice State": "P+Digit2",
     "Ultimate Feldsparring Timer": false,
-    "The Eye Timer": false,
+    "Warp Timer": false,
+
+    "    ": { "type": "separator" },
+    "Vessel Clip Practice State": "P+Digit3",
     "Observe Timer": false,
+
+    "     ": { "type": "separator" },
+    "Clone Practice State": "P+Digit4",
     "Clone Timer": false,
+
+    "      ": { "type": "separator" },
+    "Instrument Hunt Practice State": "P+Digit5",
     "Instrument Hunt Timer": false,
-    "== Player Teleport ==": {
-      "type": "separator"
-    },
-    "Player Teleport 1 Planet": {
+    "Predict Instrument Hunt Time": false,
+
+    // Custom Practice States
+    "       ": { "type": "separator" },
+    "        ": { "type": "separator" },
+    "Custom Practice State 1": "Slash+Digit1",
+    "Custom Practice State 1 Planet": {
       "type": "selector",
       "value": "Timber Hearth",
       "options": [
-        "Sun",
-        "Sun Station",
-        "Ember Twin",
-        "Ash Twin",
-        "The Interloper",
-        "Dark Bramble",
-        "Giant's Deep",
-        "Orbital Probe Cannon",
-        "Quantum Moon",
-        "Brittle Hollow",
-        "Hollow's Lantern",
         "Timber Hearth",
         "The Attlerock",
+        "Brittle Hollow",
+        "Hollow's Lantern",
+        "Giant's Deep",
+        "Orbital Probe Cannon",
+        "Ash Twin",
+        "Ember Twin",
+        "Dark Bramble",
+        "DB_HubDimension",
+        "DB_VesselDimension",
+        "DB_ExitOnlyDimension",
+        "DB_AnglerNestDimension",
+        "DB_Elsinore",
+        "DB_ClusterDimension",
+        "DB_PioneerDimension",
+        "DB_EscapePodDimension",
+        "DB_SmallNest",
+        "The Interloper",
+        "SunStation",
+        "Quantum Moon",
+        "WhiteHole",
         "The Stranger",
         "DreamWorld",
-        "EyeOfTheUniverse"
+	      "EyeOfTheUniverse"
       ]
     },
-    "Player Teleport 1 Position": "0.0, 0.0, 0.0",
-    "Player Teleport 1 Rotation": "0.0, 0.0, 0.0",
-    " ": {
-      "type": "separator"
-    },
-    "Player Teleport 2 Planet": {
+    "Custom Practice State 1 Position": "0.0, 0.0, 0.0",
+    "Custom Practice State 1 Rotation": "0.0, 0.0, 0.0",
+
+    "         ": { "type": "separator" },
+    "Custom Practice State 2": "Slash+Digit2",
+    "Custom Practice State 2 Planet": {
       "type": "selector",
       "value": "Timber Hearth",
       "options": [
-        "Sun",
-        "Sun Station",
-        "Ember Twin",
-        "Ash Twin",
-        "The Interloper",
-        "Dark Bramble",
-        "Giant's Deep",
-        "Orbital Probe Cannon",
-        "Quantum Moon",
-        "Brittle Hollow",
-        "Hollow's Lantern",
         "Timber Hearth",
         "The Attlerock",
+        "Brittle Hollow",
+        "Hollow's Lantern",
+        "Giant's Deep",
+        "Orbital Probe Cannon",
+        "Ash Twin",
+        "Ember Twin",
+        "Dark Bramble",
+        "DB_HubDimension",
+        "DB_VesselDimension",
+        "DB_ExitOnlyDimension",
+        "DB_AnglerNestDimension",
+        "DB_Elsinore",
+        "DB_ClusterDimension",
+        "DB_PioneerDimension",
+        "DB_EscapePodDimension",
+        "DB_SmallNest",
+        "The Interloper",
+        "SunStation",
+        "Quantum Moon",
+        "WhiteHole",
         "The Stranger",
         "DreamWorld",
-        "EyeOfTheUniverse"
+	      "EyeOfTheUniverse"
       ]
     },
-    "Player Teleport 2 Position": "0.0, 0.0, 0.0",
-    "Player Teleport 2 Rotation": "0.0, 0.0, 0.0",
-    "  ": {
-      "type": "separator"
-    },
-    "Player Teleport 3 Planet": {
+    "Custom Practice State 2 Position": "0.0, 0.0, 0.0",
+    "Custom Practice State 2 Rotation": "0.0, 0.0, 0.0",
+
+    "          ": { "type": "separator" },
+    "Custom Practice State 3": "Slash+Digit3",
+    "Custom Practice State 3 Planet": {
       "type": "selector",
       "value": "Timber Hearth",
       "options": [
-        "Sun",
-        "Sun Station",
-        "Ember Twin",
-        "Ash Twin",
-        "The Interloper",
-        "Dark Bramble",
-        "Giant's Deep",
-        "Orbital Probe Cannon",
-        "Quantum Moon",
-        "Brittle Hollow",
-        "Hollow's Lantern",
         "Timber Hearth",
         "The Attlerock",
+        "Brittle Hollow",
+        "Hollow's Lantern",
+        "Giant's Deep",
+        "Orbital Probe Cannon",
+        "Ash Twin",
+        "Ember Twin",
+        "Dark Bramble",
+        "DB_HubDimension",
+        "DB_VesselDimension",
+        "DB_ExitOnlyDimension",
+        "DB_AnglerNestDimension",
+        "DB_Elsinore",
+        "DB_ClusterDimension",
+        "DB_PioneerDimension",
+        "DB_EscapePodDimension",
+        "DB_SmallNest",
+        "The Interloper",
+        "SunStation",
+        "Quantum Moon",
+        "WhiteHole",
         "The Stranger",
         "DreamWorld",
-        "EyeOfTheUniverse"
+	      "EyeOfTheUniverse"
       ]
     },
-    "Player Teleport 3 Position": "0.0, 0.0, 0.0",
-    "Player Teleport 3 Rotation": "0.0, 0.0, 0.0"
+    "Custom Practice State 3 Position": "0.0, 0.0, 0.0",
+    "Custom Practice State 3 Rotation": "0.0, 0.0, 0.0"
   }
 }

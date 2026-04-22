@@ -1,6 +1,5 @@
-﻿using OWML.Common;
+﻿using OWML;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace CheeseTools.Utils {
 	public static class Teleportation {
@@ -40,19 +39,20 @@ namespace CheeseTools.Utils {
 			}
 		}
 
-		public static void TeleportPlayerTo(OWRigidbody relativeBody, RelativeLocationData relativeLocation) => TeleportBodyTo(Locator.GetPlayerBody(), relativeBody, relativeLocation);
+		public static void TeleportPlayerTo(OWRigidbody relativeBody, RelativeLocationData relativeLocation) {
+			TeleportBodyTo(Locator.GetPlayerBody(), relativeBody, relativeLocation);
+			Locator.GetPlayerCameraController().SetDegreesY(0f);
+		}
 
 		public static void TeleportBodyTo(OWRigidbody body, OWRigidbody relativeBody, RelativeLocationData relativeLocation) {
 			Vector3 worldPosition = relativeBody.transform.TransformPoint(relativeLocation.localPosition);
 			body.WarpToPositionRotation(worldPosition, relativeBody.transform.rotation * relativeLocation.localRotation);
 			body.SetVelocity(relativeBody.GetPointVelocity(worldPosition));
-			body.SetAngularVelocity(relativeBody.GetAngularVelocity());
 		}
 
 		public static void TeleportBodyTo(OWRigidbody body, Vector3 position, Quaternion rotation, Vector3 velocity, Vector3 angularVelocity) {
 			body.WarpToPositionRotation(position, rotation);
 			body.SetVelocity(velocity);
-			body.SetAngularVelocity(angularVelocity);
 		}
 
 		//public static void TeleportPlayerTo(OWRigidbody relativeBody, RelativeLocationData relativeLocation) {

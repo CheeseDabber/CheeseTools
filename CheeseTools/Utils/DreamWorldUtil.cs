@@ -46,8 +46,6 @@ namespace CheeseTools.Utils {
 		public static void EnterDreamWorld() => EnterDreamWorld(GetSettingsCampfireType());
 
 		public static void EnterDreamWorld(DreamCampfireType dreamCampfireType) {
-			CheeseTools.Console.WriteLine("Entering Dreamworld");
-
 			DreamCampfire dreamCampfire = GetDreamCampfire(dreamCampfireType);
 			if (dreamCampfire == null) return;
 

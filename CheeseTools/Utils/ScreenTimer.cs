@@ -18,9 +18,17 @@ namespace CheeseTools.Utils {
 		public void SetText(string text) => _screenPrompt.SetText(text);
 		public string GetText() => _screenPrompt.GetText();
 
+		public new void Restart() {
+			base.Reset();
+			this.Start();
+		}
+
 		public new void Start() {
+			if (!Locator.GetPromptManager().GetScreenPromptList(PromptPosition.LowerLeft).Contains(_screenPrompt)) {
+				Locator.GetPromptManager().AddScreenPrompt(_screenPrompt, PromptPosition.LowerLeft, true);
+			}
 			ScreenTimerController.Register(this);
-			Restart();
+			base.Start();
 		}
 
 		public new void Stop() {
@@ -38,38 +46,39 @@ namespace CheeseTools.Utils {
 	}
 
 	public static class ScreenTimerController {
-		private static Dictionary<string, ScreenTimer> _screenTimers = new Dictionary<string, ScreenTimer>();
+		private static HashSet<ScreenTimer> _screenTimers = new HashSet<ScreenTimer>();
+
+		public static void Start() {
+			LoadManager.OnCompleteSceneLoad += OnCompleteSceneLoad;
+		}
 
 		public static void Update() {
-			foreach (ScreenTimer screenTimer in _screenTimers.Values) {
+			foreach (ScreenTimer screenTimer in _screenTimers) {
 				if (screenTimer.IsRunning) {
 					TimeSpan time = TimeSpan.FromSeconds(screenTimer.Elapsed.TotalSeconds);
 					string formattedTime = time.Minutes >= 1 ? time.ToString(@"m\:ss\.ff") : time.ToString(@"ss\.ff");
 					screenTimer.SetText($"{screenTimer.prefix}[{formattedTime}]");
-					if (!Locator.GetPromptManager().GetScreenPromptList(PromptPosition.LowerLeft).Contains(screenTimer.GetScreenPrompt())) {
-						Locator.GetPromptManager().AddScreenPrompt(screenTimer.GetScreenPrompt(), PromptPosition.LowerLeft, true);
-					}
 				}
 			}
+		}
+
+		public static void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene) {
+			foreach (Stopwatch stopwatch in _screenTimers) {
+				stopwatch.Stop();
+			}
+			_screenTimers.Clear();
 		}
 
 		public static void Register(ScreenTimer screenTimer) {
-			if (_screenTimers.TryGetValue(screenTimer.prefix, out ScreenTimer value)) {
-				if (screenTimer == value) return;
-				else {
-					value.Stop();
-					value.Remove();
-				}
-			}
-			_screenTimers.Add(screenTimer.prefix, screenTimer);
+			_screenTimers.Add(screenTimer);
 		}
 
 		public static void Unregister(ScreenTimer screenTimer) {
-			_screenTimers.Remove(screenTimer.prefix);
+			_screenTimers.Remove(screenTimer);
 		}
 
 		public static bool IsRegistered(ScreenTimer screenTimer) {
-			return _screenTimers.TryGetValue(screenTimer.prefix, out ScreenTimer value) && value != null;
+			return _screenTimers.Contains(screenTimer);
 		}
 	}
 }

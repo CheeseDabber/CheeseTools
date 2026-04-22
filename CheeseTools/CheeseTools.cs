@@ -3,33 +3,35 @@ using HarmonyLib;
 using OWML.Common;
 using OWML.ModHelper;
 using OWML.Utils;
+using System;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using System;
+using UnityEngine.InputSystem.Controls;
 
-// planned features:
-// - stranger decloak
+// planned:
+// - dude an always enable escape feature would be fire
+// - fast load new expedition keybind
 // - ship invincibility
-
-// bugs:
-// - teleporting from stranger does some weird shit to velocity
-// - sector text dissapearing upon entering dreamworld
-// - some null errors when quitting to menu
+// - player invincibility
+// - stranger decloak
 
 //TODO:
-// - Add timers category in settings and make then toggleable there instead of depending on practice state activation
+// - Clone practice state
+// - Warp practice state
+// - Village practice state
+// - Bramble practice state
 // - ATP interior pratice state
-// - List out all relative body names and put them in config
+// - Make sleepuntil not put you at campfire and maybe add like a warning if it is over sleep time
+// - Custom practice state settings like loop time and put on suit
 
 namespace CheeseTools {
 	public class CheeseTools : ModBehaviour {
 		public static CheeseTools instance;
 		public static IModConsole Console => instance.ModHelper.Console;
-		public static bool isInDreamWorld = false;
 
+		private static Keybinds keybinds = new Keybinds();
 		private static Action afterEyeWarp;
-		private static bool hasInfResources = false;
 		private static ScreenPrompt loopTimeText = new ScreenPrompt("");
 		private static CanvasMarker strangerMarker;
 		private static NomaiWarpTransmitter atpWarpTransmitter => GameObject.Find("Prefab_NOM_WarpTransmitter (1)")?.GetComponent<NomaiWarpTransmitter>();
@@ -40,14 +42,17 @@ namespace CheeseTools {
 		private static double wakeUpTime = 0;
 		private static Action onWakeUp;
 
+		private static bool inPracticeState = false;
 		private static ScreenTimer atpEnterTimer = new ScreenTimer("ATP Enter Time: ");
 		private static ScreenTimer atpInteriorTimer = new ScreenTimer("ATP Interior Time: ");
 		private static ScreenTimer atpExitTimer = new ScreenTimer("ATP Exit Time: ");
 		private static ScreenTimer feldsparringTimer = new ScreenTimer("Feldsparring Time: ");
-		private static ScreenTimer eyeTimer = new ScreenTimer("Eye Time: ");
+		private static ScreenTimer warpTimer = new ScreenTimer("Warp Time: ");
 		private static ScreenTimer observeTimer = new ScreenTimer("Observe Time: ");
 		private static ScreenTimer cloneTimer = new ScreenTimer("Clone Time: ");
-		private static ScreenTimer instrumentTimer = new ScreenTimer("Instrument Hunt Time: ");
+		public static ScreenTimer instrumentTimer = new ScreenTimer("Instrument Hunt Time: ");
+
+		private static NomaiInterfaceOrb powerOrb;
 
 		public void Awake() {
 			instance = this;
@@ -58,128 +63,142 @@ namespace CheeseTools {
 			new Harmony("CheeseRunner1.CheeseTools").PatchAll(Assembly.GetExecutingAssembly());
 
 			OnCompleteSceneLoad(OWScene.TitleScreen, OWScene.TitleScreen);
-			LoadManager.OnCompleteSceneLoad += OnCompleteSceneLoad;
+			LoadManager.OnCompleteSceneLoad += (OWScene previousScene, OWScene newScene) => { 
+				ModHelper.Events.Unity.FireOnNextUpdate(() => { OnCompleteSceneLoad(previousScene, newScene); }); 
+			};
 
-			GlobalMessenger.AddListener("WakeUp", OnWakeUp);
-			GlobalMessenger.AddListener("EnterDreamWorld", OnEnterDreamWorld);
-			GlobalMessenger.AddListener("ExitDreamWorld", OnExitDreamWorld);
 			GlobalMessenger.AddListener("StopSleepingAtCampfire", OnStopSleepingAtCampfire);
 			GlobalMessenger.AddListener("StartVesselWarp", OnStartVesselWarp);
 			GlobalMessenger<EyeState>.AddListener("EyeStateChanged", OnEyeStateChanged);
+			GlobalMessenger<DeathType>.AddListener("PlayerDeath", OnPlayerDeath);
+
+			ScreenTimerController.Start();
 		}
 
-		public void OnWakeUp() {
-			Locator.GetPlayerSectorDetector().OnEnterSector += OnEnterSector;
-			Locator.GetPlayerSectorDetector().OnExitSector += OnExitSector;
+		public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene) {
+			//Console.WriteLine($"previousScene: {previousScene}, newScene: {newScene}");
 
-			bool showSector = ModHelper.Config.GetSettingsValue<bool>("Show Sectors");
-			if (showSector) {
-				foreach (Sector sector in Locator.GetPlayerSectorDetector()._sectorList) {
-					AddScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
+			if (newScene == OWScene.SolarSystem) {
+				Locator.GetPlayerSectorDetector().OnEnterSector += OnEnterSector;
+				Locator.GetPlayerSectorDetector().OnExitSector += OnExitSector;
+				bool showSector = ModHelper.Config.GetSettingsValue<bool>("Show Sectors");
+				if (showSector) {
+					foreach (Sector sector in Locator.GetPlayerSectorDetector()._sectorList) {
+						AddScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
+					}
+				}
+
+				if (LoadManager.GetCurrentScene() == OWScene.SolarSystem) {
+					atpWarpTransmitter.OnReceiveWarpedBody += OnReceiveWarpedBodyATPTransmitter;
+					atpWarpReceiver.OnReceiveWarpedBody += OnReceiveWarpedBodyATPReceiver;
+				}
+				powerOrb = GameObject.Find("PowerSwitchInterface/Prefab_NOM_InterfaceOrb").GetComponent<NomaiInterfaceOrb>();
+			}
+			else {
+
+			}
+			if (newScene == OWScene.EyeOfTheUniverse) {
+				if (IsTimerEnabled("Observe Timer")) {
+					observeTimer.Restart();
+				}
+				if (afterEyeWarp != null) {
+					ModHelper.Events.Unity.FireOnNextUpdate(() => {
+						afterEyeWarp();
+					});
 				}
 			}
+			else {
+				afterEyeWarp = null;
+			}
+			if (newScene == OWScene.TitleScreen) {
+				inPracticeState = false;
 
-			if (LoadManager.GetCurrentScene() == OWScene.SolarSystem) {
-				atpWarpTransmitter.OnReceiveWarpedBody += OnReceiveWarpedBodyATPTransmitter;
-				atpWarpReceiver.OnReceiveWarpedBody += OnReceiveWarpedBodyATPReceiver;
+				if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save") && (previousScene == OWScene.SolarSystem || previousScene == OWScene.EyeOfTheUniverse)) {
+					PlayerData.ResetGame();
+					PlayerData.LearnLaunchCodes();
+					PlayerData.SaveLoopCount(3);
+				}
+			}
+			else {
+
 			}
 		}
 
 		public void Update() {
-			if (!InWorld()) return;
+			CheckInput();
 
-			if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.R].wasPressedThisFrame) {
-				hasInfResources = !hasInfResources;
-				if (hasInfResources) {
-					AddScreenText("Infinite Resources Enabled", PromptPosition.UpperLeft);
-					Console.WriteLine("Infinite resources enabled");
-				}
-				else {
-					RemoveScreenText("Infinite Resources Enabled", PromptPosition.UpperLeft);
-					Console.WriteLine("Infinite resources disabled");
+			if (Locator.GetPlayerBody() == null) return;
+			UpdateInfiniteResources();
+			UpdateLoopTimeText();
+			UpdateSleepText();
+			UpdateStrangerMarker();
+			ScreenTimerController.Update();
+		}
+
+		private void CheckInput() {
+			if (ModHelper.Config.GetSettingsValue<bool>("Log Names Of Pressed Keys")) {
+				foreach (KeyControl key in Keyboard.current.allKeys) {
+					if (key.wasPressedThisFrame) {
+						Console.WriteLine($"Pressed Key: \"{Enum.GetName(typeof(Key), key.keyCode)}\"", MessageType.Info);
+					}
 				}
 			}
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.T].wasPressedThisFrame) {
+
+			if (Locator.GetPlayerBody() == null) return;
+
+			if (keybinds.Get(SettingKeybind.ToggleSuit)?.WasPressedThisFrame() == true) {
 				PlayerSpacesuit spacesuit = Locator.GetPlayerSuit();
-				if (!spacesuit.IsWearingSuit()) {
+				if (!spacesuit.IsWearingSuit())
 					spacesuit.SuitUp();
-					Console.WriteLine("Suited up");
-				}
-				else {
+				else
 					spacesuit.RemoveSuit();
-					Console.WriteLine("Suit removed");
-				}
 			}
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.RightBracket].wasPressedThisFrame) {
+			else if (keybinds.Get(SettingKeybind.ToggleSpeedup)?.WasPressedThisFrame() == true) {
+				ToggleSpeedUp();
+			}
+			else if (keybinds.Get(SettingKeybind.LogPlayerLocation)?.WasPressedThisFrame() == true) {
 				OWRigidbody relativeBody = RelativeBody.GetCurrent();
 				RelativeBody.PrintRelativeLocation("Player Position:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
 			}
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.LeftBracket].wasPressedThisFrame) {
+			else if (keybinds.Get(SettingKeybind.LogShipLocation)?.WasPressedThisFrame() == true) {
 				OWRigidbody relativeBody = RelativeBody.GetCurrent();
 				RelativeBody.PrintRelativeLocation("Ship Position:\n", relativeBody, new RelativeLocationData(Locator.GetShipBody(), relativeBody));
 			}
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.Backquote].wasPressedThisFrame) {
+			else if (keybinds.Get(SettingKeybind.TeleportShipToPlayer)?.WasPressedThisFrame() == true) {
 				Teleportation.TeleportShipToPlayer();
 			}
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.Digit1].wasPressedThisFrame) {
-				OWRigidbody relativeBody = RelativeBody.GetFromString(ModHelper.Config.GetSettingsValue<string>("Player Teleport 1 Planet"));
-				RelativeLocationData relativeLocation = new RelativeLocationData(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>("Player Teleport 1 Position")),
-					Quaternion.Euler(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>("Player Teleport 1 Rotation"))),
-					Vector3.zero
-				);
-				Teleportation.TeleportPlayerTo(relativeBody, relativeLocation);
-			}
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.Digit2].wasPressedThisFrame) {
-				OWRigidbody relativeBody = RelativeBody.GetFromString(ModHelper.Config.GetSettingsValue<string>("Player Teleport 2 Planet"));
-				RelativeLocationData relativeLocation = new RelativeLocationData(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>("Player Teleport 2 Position")),
-					Quaternion.Euler(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>("Player Teleport 2 Rotation"))),
-					Vector3.zero
-				);
-				Teleportation.TeleportPlayerTo(relativeBody, relativeLocation);
-			}
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.Digit3].wasPressedThisFrame) {
-				OWRigidbody relativeBody = RelativeBody.GetFromString(ModHelper.Config.GetSettingsValue<string>("Player Teleport 3 Planet"));
-				RelativeLocationData relativeLocation = new RelativeLocationData(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>("Player Teleport 3 Position")),
-					Quaternion.Euler(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>("Player Teleport 3 Rotation"))),
-					Vector3.zero
-				);
-				Teleportation.TeleportPlayerTo(relativeBody, relativeLocation);
-			}
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.L].wasPressedThisFrame) {
-				if (!isInDreamWorld) {
+			else if (keybinds.Get(SettingKeybind.EnterExitDreamWorld)?.WasPressedThisFrame() == true) {
+				if (!Locator.GetDreamWorldController()._insideDream) {
 					DreamWorldUtil.EnterDreamWorld();
 				}
 				else {
 					DreamWorldUtil.ExitDreamWorld();
 				}
 			}
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.Y].wasPressedThisFrame) {
-				OWRigidbody player = Locator.GetPlayerBody();
-				player.SetPosition(player.GetPosition() + player.transform.up * -10);
-			}
-			else if (Keyboard.current[Key.Escape].wasPressedThisFrame) {
-				Locator.GetMenuInputModule().ProcessMouseEvent();
-			}
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.Backslash].wasPressedThisFrame) {
-				ToggleSpeedUp();
-			}
-			else if (Keyboard.current[Key.P].IsPressed() && Keyboard.current[Key.Digit1].wasPressedThisFrame) {
-				// ATP practice state
-				SleepUntil(441, () => {
+			//Practice States
+			else if (keybinds.Get(SettingKeybind.ATPPracticeState)?.WasPressedThisFrame() == true) {
+				string timeStr = ModHelper.Config.GetSettingsValue<string>("ATP Loop Time");
+				if (!Double.TryParse(timeStr, out Double sleepTime)) {
+					Console.WriteLine($"Invalid ATP Loop Time: \"{timeStr}\" is not recognized", MessageType.Warning);
+					return;
+				}
+
+				inPracticeState = true;
+				SleepUntil(sleepTime, () => {
 					RelativeLocationData location = new RelativeLocationData(new Vector3(17.74f, -44.73f, 185.74f), Quaternion.Euler(new Vector3(294.14f, 63.13f, 124.75f)), Vector3.zero);
 					Teleportation.TeleportPlayerTo(Locator.GetAstroObject(AstroObject.Name.TimberHearth).GetOWRigidbody(), location);
 					Locator.GetPlayerSuit().SuitUp(false, true);
 
-					if (ModHelper.Config.GetSettingsValue<bool>("ATP Exit Timer")) {
-						atpExitTimer.Start();
+					if (IsTimerEnabled("ATP Exit Timer")) {
+						atpExitTimer.Restart();
 					}
-					if (ModHelper.Config.GetSettingsValue<bool>("ATP Enter Timer")) {
-						atpEnterTimer.Start();
+					if (IsTimerEnabled("ATP Enter Timer")) {
+						atpEnterTimer.Restart();
 					}
 				});
 			}
-			else if (Keyboard.current[Key.P].IsPressed() && Keyboard.current[Key.Digit2].wasPressedThisFrame) {
-				// Ultimate Feldsparring practice state
+			else if (keybinds.Get(SettingKeybind.FeldsparringPracticeState)?.WasPressedThisFrame() == true) {
+				inPracticeState = true;
 				Locator.GetPlayerSuit().SuitUp(false, true);
 				OWRigidbody ship = Locator.GetShipBody();
 				RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(508.07f, 84.54f, -3248.96f), Quaternion.Euler(new Vector3(0.94f, 350.39f, 265.78f)), Vector3.zero);
@@ -188,63 +207,92 @@ namespace CheeseTools {
 				ship.SetVelocity(Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody().GetVelocity() + ship.transform.forward * 1150);
 				Items.PickUpItem(Items.GetWarpCore());
 			}
-			else if (Keyboard.current[Key.P].IsPressed() && Keyboard.current[Key.Digit3].wasPressedThisFrame) {
-				// Observe practice state
+			else if (keybinds.Get(SettingKeybind.VesselClipPracticeState)?.WasPressedThisFrame() == true) {
+				inPracticeState = true;
 				Locator.GetPlayerSuit().SuitUp(false, true);
-				RelativeLocationData location = new RelativeLocationData(new Vector3(117.16f, 6.99f, -13.36f), Quaternion.Euler(351.76f, 95.56f, 11.61f), Vector3.zero);
-				Teleportation.TeleportPlayerTo(Locator.GetMinorAstroObject("Vessel Dimension").GetOWRigidbody(), location);
-				LoadSector(GameObject.Find("Sector_VesselDimension").GetComponent<Sector>());
-				Items.PickUpItem(Items.GetWarpCore());
+				Teleportation.TeleportPlayerTo(GameObject.Find("DB_VesselDimension_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(175.66f, 13.39f, -19.34f), Quaternion.Euler(353.87f, 95.65f, 12.28f), Vector3.zero));
+				
+				VesselWarpController warpController = GameObject.Find("WarpController").GetComponent<VesselWarpController>();
+				warpController._coreSocket.PlaceIntoSocket(Items.GetWarpCore());
+				warpController._cageAnimator._transform.localPosition = new Vector3(0f, -8.1f, 0f);
+				warpController._cageAnimator._transform.localRotation = Quaternion.Euler(new Vector3(0f, 180f, 0f));
+				warpController._cageTrigger.OnExit -= warpController.OnExitCageTrigger;
+				warpController._cageClosed = true;
+
+				OWTriggerVolume gravityTrigger = GameObject.Find("GravityOxygenVolume_VesselBridge").GetComponent<OWTriggerVolume>();
+				gravityTrigger.AddObjectToVolume(Locator.GetPlayerDetector());
+				gravityTrigger.AddObjectToVolume(Locator.GetPlayerCameraDetector());
+
+				NomaiInterfaceSlot vesselSlot = GameObject.Find("VesselWarpSlot").GetComponent<NomaiInterfaceSlot>();
+				powerOrb.SetOrbPosition(vesselSlot.transform.position);
+
+				NomaiCoordinateInterface coordinateInterface = warpController._coordinateInterface;
+				coordinateInterface._pillarRoot.localPosition = new Vector3(coordinateInterface._pillarRoot.localPosition.x, 0f, coordinateInterface._pillarRoot.localPosition.z);
+				coordinateInterface._pillarRaised = true;
+				coordinateInterface._updateHeight = false;
+
+				coordinateInterface._degrees = 240;
+				coordinateInterface._basePivot.localEulerAngles = Vector3.up * coordinateInterface._degrees;
+				coordinateInterface._activePanelIndex = 2;
+				coordinateInterface._rotatingToPanel = false;
+
+				coordinateInterface._upperOrb.RemoveAllLocks();
+				coordinateInterface._upperOrb.AddLock();
+				coordinateInterface._orb._lockCount = 1;
+				coordinateInterface._orb._orbBody.Unsuspend();
+
+				coordinateInterface._orb._isBeingDragged = false;
+				coordinateInterface._rotateSlots[1]._occupyingOrb = coordinateInterface._orb;
+				coordinateInterface._orb.SetOrbPosition(coordinateInterface._rotateSlots[1].transform.position);
+
+				coordinateInterface._gateAnimators[0]._transform.localPosition = coordinateInterface._gateAnimators[0]._origLocalPosition;
+				coordinateInterface._gateAnimators[1]._transform.localPosition = coordinateInterface._gateAnimators[1]._origLocalPosition;
+				coordinateInterface._gateAnimators[2]._transform.localPosition = coordinateInterface._gateAnimators[2]._origLocalPosition;
+				coordinateInterface._gateAnimators[3]._transform.localPosition = coordinateInterface._gateAnimators[3]._origLocalPosition;
+				coordinateInterface._gateAnimators[3]._transform.localPosition = -coordinateInterface._gateAnimators[3]._transform.forward;
+
+				SetCoordinate(coordinateInterface._nodeControllers[0], coordinateInterface._coordinateX);
+				SetCoordinate(coordinateInterface._nodeControllers[1], coordinateInterface._coordinateY);
+				SetCoordinate(coordinateInterface._nodeControllers[2], coordinateInterface._coordinateZ);
+
+				// if you warp before bundles are loaded the game gets stuck infinitely loading.
+				// so I just forcefully clear it. no clue if this breaks anything
+				StreamingManager.s_activeBundles.Clear();
 			}
-			else if (Keyboard.current[Key.P].IsPressed() && Keyboard.current[Key.Digit4].wasPressedThisFrame) {
-				// Clone practice state
-				WarpToEye(() => {
-					Teleportation.TeleportPlayerTo(GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-1050.61f, -3927.77f, 2104.22f), Quaternion.identity, Vector3.zero));
-				});
-			}
-			else if (Keyboard.current[Key.P].IsPressed() && Keyboard.current[Key.Digit5].wasPressedThisFrame) {
-				// Instrument hunt practice state
+			else if (keybinds.Get(SettingKeybind.InstrumentPracticeState)?.WasPressedThisFrame() == true) {
+				inPracticeState = true;
 				WarpToEye(() => {
 					Locator.GetEyeStateManager().SetState(EyeState.ForestIsDark);
 					Teleportation.TeleportPlayerTo(GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-54.48f, 1.00f, 5999.10f), Quaternion.Euler(0.00f, 94.03f, 0.00f), Vector3.zero));
 					Locator.GetFlashlight().TurnOn();
 					Locator.GetToolModeSwapper().EquipToolMode(ToolMode.SignalScope);
 					Locator.GetToolModeSwapper().GetSignalScope()._targetFOV = 60f;
-				});
+				}); 
 			}
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.H].wasPressedThisFrame) {
-				LoadManager.LoadScene(OWScene.EyeOfTheUniverse);
-				Teleportation.TeleportPlayerTo(GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-54.48f, 1.00f, 5999.10f), Quaternion.Euler(0.00f, 94.03f, 0.00f), Vector3.zero));
-				//Locator.GetEyeStateManager().SetState(EyeState.ForestOfGalaxies);
+			// Custom Practice States
+			else if (keybinds.Get(SettingKeybind.CustomPracticeState1)?.WasPressedThisFrame() == true) {
+				CustomPracticeState(1);
+			}
+			else if (keybinds.Get(SettingKeybind.CustomPracticeState2)?.WasPressedThisFrame() == true) {
+				CustomPracticeState(2);
+			}
+			else if (keybinds.Get(SettingKeybind.CustomPracticeState3)?.WasPressedThisFrame() == true) {
+				CustomPracticeState(3);
+			}
+			// dev keybind for testing
+			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
+
 			}
 
-			ScreenTimerController.Update();
-			UpdateInfiniteResources();
-			UpdateStrangerMarker();
-			UpdateLoopTimeText();
-
-			if (isSleeping) {
-				if (TimeLoop.GetSecondsElapsed() < wakeUpTime) {
-					campfire._fastForwardMultiplier = Mathf.Clamp((float)wakeUpTime - TimeLoop.GetSecondsElapsed(), 2f, 50f);
-					GameObject.FindObjectOfType<SleepTimerUI>()._text.text = $"Sleeping until {TimeSpan.FromSeconds(wakeUpTime).ToString(@"m\:ss")}\n" + TimeSpan.FromSeconds(TimeLoop.GetSecondsElapsed()).ToString(@"m\:ss");
-				}
-				else {
-					if (!OWTime.IsPaused()) {
-						OWTime.Pause(OWTime.PauseType.Sleeping);
-					}
-					GameObject.FindObjectOfType<SleepTimerUI>()._text.text = $"Ready. Wake up to start\n" + TimeSpan.FromSeconds(TimeLoop.GetSecondsElapsed()).ToString(@"m\:ss");
-				}
-			}
-
-			if (instrumentTimer?.IsRunning == true && GameObject.FindObjectOfType<CosmicInflationController>()?._state == CosmicInflationController.State.Collapsing) {
-				Locator.GetPromptManager().SetPromptsVisible(true);
-				instrumentTimer.Stop();
-			}
+			// Fixes weird bug of instantly going into settings upon pressing escape in 1.1.12 when using OWML
+			//else if (Keyboard.current[Key.Escape].wasPressedThisFrame) {
+			//	Locator.GetMenuInputModule().ProcessMouseEvent();
+			//}
 		}
 
 		public override void Configure(IModConfig config) {
 			if (Locator.GetPlayerSectorDetector() != null) {
-				bool showSector = ModHelper.Config.GetSettingsValue<bool>("Show Sectors");
+				bool showSector = config.GetSettingsValue<bool>("Show Sectors");
 				if (showSector) {
 					foreach (Sector sector in Locator.GetPlayerSectorDetector()._sectorList) {
 						AddScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
@@ -256,60 +304,34 @@ namespace CheeseTools {
 					}
 				}
 			}
-		}
 
-		public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene) {
-			//if (newScene == OWScene.EyeOfTheUniverse) {
-			//	Locator.GetEyeStateManager()._initialState = EyeState.ForestOfGalaxies;
-			//}
+			keybinds.Clear();
+			keybinds.Add(SettingKeybind.ToggleSuit, config.GetSettingsValue<string>("Toggle Suit"));
+			keybinds.Add(SettingKeybind.ToggleSpeedup, config.GetSettingsValue<string>("Toggle Speedup"));
+			keybinds.Add(SettingKeybind.LogPlayerLocation, config.GetSettingsValue<string>("Log Player Location"));
+			keybinds.Add(SettingKeybind.LogShipLocation, config.GetSettingsValue<string>("Log Ship Location"));
+			keybinds.Add(SettingKeybind.TeleportShipToPlayer, config.GetSettingsValue<string>("Teleport Ship To Player"));
+			keybinds.Add(SettingKeybind.EnterExitDreamWorld, config.GetSettingsValue<string>("Enter/Exit DreamWorld"));
 
+			keybinds.Add(SettingKeybind.ATPPracticeState, config.GetSettingsValue<string>("ATP Practice State"));
+			keybinds.Add(SettingKeybind.FeldsparringPracticeState, config.GetSettingsValue<string>("Ultimate Feldsparring Practice State"));
+			keybinds.Add(SettingKeybind.InstrumentPracticeState, config.GetSettingsValue<string>("Instrument Hunt Practice State"));
+			keybinds.Add(SettingKeybind.VesselClipPracticeState, config.GetSettingsValue<string>("Vessel Clip Practice State"));
 
-			//Console.WriteLine($"previousScene: {previousScene}, newScene: {newScene}");
-			hasInfResources = false;
-
-			atpEnterTimer.Stop();
-			atpInteriorTimer.Stop();
-			atpExitTimer.Stop();
-			feldsparringTimer.Stop();
-			eyeTimer.Stop();
-			observeTimer.Stop();
-			cloneTimer.Stop();
-			instrumentTimer.Stop();
-
-			if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save")) {
-				if ((previousScene == OWScene.SolarSystem || previousScene == OWScene.EyeOfTheUniverse) && newScene == OWScene.TitleScreen) {
-					PlayerData.ResetGame();
-					PlayerData.LearnLaunchCodes();
-					PlayerData.SaveLoopCount(3);
-				}
-			}
-
-			if (afterEyeWarp != null) {
-				if (newScene == OWScene.EyeOfTheUniverse) {
-					ModHelper.Events.Unity.FireOnNextUpdate(() => {
-						afterEyeWarp();
-					});
-				}
-				else {
-					afterEyeWarp = null;
-				}
-			}
-
-			if (ModHelper.Config.GetSettingsValue<bool>("Observe Timer") && afterEyeWarp == null && newScene == OWScene.EyeOfTheUniverse) {
-				observeTimer.Start();
-			}
+			keybinds.Add(SettingKeybind.CustomPracticeState1, config.GetSettingsValue<string>("Custom Practice State 1"));
+			keybinds.Add(SettingKeybind.CustomPracticeState2, config.GetSettingsValue<string>("Custom Practice State 2"));
+			keybinds.Add(SettingKeybind.CustomPracticeState3, config.GetSettingsValue<string>("Custom Practice State 3"));
 		}
 
 		public void OnStartVesselWarp() {
-			eyeTimer.Stop();
+			warpTimer.Stop();
 		}
 
 		public void OnEyeStateChanged(EyeState state) {
-			Console.WriteLine($"EyeState changed: {state}");
+			//Console.WriteLine($"EyeState changed: {state}");
 			if (state == EyeState.InstrumentHunt) {
-				if (ModHelper.Config.GetSettingsValue<bool>("Instrument Hunt Timer")) {
-					instrumentTimer = new ScreenTimer("Instrument Hunt Time: ");
-					instrumentTimer.Start();
+				if (IsTimerEnabled("Instrument Hunt Timer")) {
+					instrumentTimer.Restart();
 				}
 				if (cloneTimer.IsRunning == true) {
 					cloneTimer.Stop();
@@ -318,18 +340,16 @@ namespace CheeseTools {
 			if (state == EyeState.ZoomOut) {
 				observeTimer.Stop();
 
-				if (ModHelper.Config.GetSettingsValue<bool>("Clone Timer")) {
-					cloneTimer.Start();
+				if (IsTimerEnabled("Clone Timer")) {
+					cloneTimer.Restart();
 				}
 			}
 		}
 
-		public void OnEnterDreamWorld() {
-			isInDreamWorld = true;
-		}
-
-		public void OnExitDreamWorld() {
-			isInDreamWorld = false;
+		public void OnPlayerDeath(DeathType deathType) {
+			if (deathType == DeathType.BigBang) {
+				instrumentTimer.Stop();
+			}
 		}
 
 		public void OnEnterSector(Sector sector) {
@@ -338,19 +358,19 @@ namespace CheeseTools {
 				AddScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
 			}
 
-			bool isFeldsparringTimer = ModHelper.Config.GetSettingsValue<bool>("Ultimate Feldsparring Timer");
-			bool isEyeTimer = ModHelper.Config.GetSettingsValue<bool>("The Eye Timer");
+			bool isFeldsparringTimer = IsTimerEnabled("Ultimate Feldsparring Timer");
+			bool isWarpTimer = IsTimerEnabled("Warp Timer");
 			if (sector.name == "Sector_AnglerNestDimension") {
 				if (isFeldsparringTimer) {
-					feldsparringTimer.Start();
+					feldsparringTimer.Restart();
 				}
 			}
 			else if (sector.name == "Sector_VesselDimension") {
 				if (feldsparringTimer.IsRunning == true) {
 					feldsparringTimer.Stop();
 				}
-				if (isEyeTimer) {
-					eyeTimer.Start();
+				if (isWarpTimer) {
+					warpTimer.Restart();
 				}
 			}
 		}
@@ -383,8 +403,8 @@ namespace CheeseTools {
 		public void OnReceiveWarpedBodyATPReceiver(OWRigidbody body, NomaiWarpPlatform startPlatform, NomaiWarpPlatform receivedPlatform) {
 			if (body is PlayerBody) {
 				atpEnterTimer.Stop();
-				if (ModHelper.Config.GetSettingsValue<bool>("ATP Interior Timer")) {
-					atpInteriorTimer.Start();
+				if (IsTimerEnabled("ATP Interior Timer")) {
+					atpInteriorTimer.Restart();
 				}
 			}
 		}
@@ -401,8 +421,12 @@ namespace CheeseTools {
 			}
 		}
 
-		public static bool InWorld() {
-			return LoadManager.GetCurrentScene() == OWScene.SolarSystem || LoadManager.GetCurrentScene() == OWScene.EyeOfTheUniverse;
+		public static void SetCoordinate(NomaiNodeController nodeController, int[] coordinate) {
+			nodeController.ResetNodes();
+			foreach (int i in coordinate) {
+				if (nodeController._nodes[i].slot)
+				nodeController.OnSlotActivated(nodeController._nodes[i].slot);
+			}
 		}
 
 		public static void WarpToEye(Action afterEyeWarp) {
@@ -445,7 +469,6 @@ namespace CheeseTools {
 					return prompt;
 				}
 			}
-
 			return null;
 		}
 
@@ -467,6 +490,58 @@ namespace CheeseTools {
 			return split.Length == 3 && float.TryParse(split[0], out float x) && float.TryParse(split[1], out float y) && float.TryParse(split[2], out float z) ? new Vector3(x, y, z) : Vector3.zero;
 		}
 
+		private bool IsTimerEnabled(string str) {
+			return inPracticeState && ModHelper.Config.GetSettingsValue<bool>(str);
+		}
+
+		private void CustomPracticeState(int num) {
+			OWRigidbody relativeBody = RelativeBody.GetFromString(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Planet"));
+			RelativeLocationData relativeLocation = new RelativeLocationData(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Position")),
+				Quaternion.Euler(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Rotation"))),
+				Vector3.zero
+			);
+			Teleportation.TeleportPlayerTo(relativeBody, relativeLocation);
+		}
+
+		private void UpdateInfiniteResources() {
+			bool infFuel = ModHelper.Config.GetSettingsValue<bool>("Infinite Fuel");
+			bool infOxygen = ModHelper.Config.GetSettingsValue<bool>("Infinite Oxygen");
+			if ((infFuel || infOxygen) && Locator.GetPlayerTransform()?.TryGetComponent(out PlayerResources resources) == true) {
+				if (infFuel)
+					resources.SetValue("_currentFuel", resources.GetValue<float>("_maxFuel"));
+				if (infOxygen)
+					resources.SetValue("_currentOxygen", resources.GetValue<float>("_maxOxygen"));
+			}
+		}
+
+		private void UpdateLoopTimeText() {
+			bool showLoopTime = ModHelper.Config.GetSettingsValue<bool>("Show Loop Time");
+			if (showLoopTime && TimeLoop.IsTimeLoopEnabled() && TimeLoop.IsTimeFlowing()) {
+				loopTimeText.SetText($"Loop Time: {TimeSpan.FromSeconds(TimeLoop.GetSecondsElapsed()).ToString(@"mm\:ss")} [{(int)TimeLoop.GetSecondsElapsed()}]");
+				if (!Locator.GetPromptManager().GetScreenPromptList(PromptPosition.LowerLeft).Contains(loopTimeText)) {
+					Locator.GetPromptManager().AddScreenPrompt(loopTimeText, PromptPosition.LowerLeft, true);
+				}
+			}
+			else {
+				Locator.GetPromptManager().RemoveScreenPrompt(loopTimeText);
+			}
+		}
+
+		private void UpdateSleepText() {
+			if (isSleeping) {
+				if (TimeLoop.GetSecondsElapsed() < wakeUpTime) {
+					campfire._fastForwardMultiplier = Mathf.Clamp((float)wakeUpTime - TimeLoop.GetSecondsElapsed(), 2f, 50f);
+					GameObject.FindObjectOfType<SleepTimerUI>()._text.text = $"Sleeping until {TimeSpan.FromSeconds(wakeUpTime).ToString(@"mm\:ss")}\n" + TimeSpan.FromSeconds(TimeLoop.GetSecondsElapsed()).ToString(@"mm\:ss");
+				}
+				else {
+					if (!OWTime.IsPaused()) {
+						OWTime.Pause(OWTime.PauseType.Sleeping);
+					}
+					GameObject.FindObjectOfType<SleepTimerUI>()._text.text = $"Ready. Wake up to start\n" + TimeSpan.FromSeconds(TimeLoop.GetSecondsElapsed()).ToString(@"mm\:ss");
+				}
+			}
+		}
+
 		private bool InitStrangerMarker() {
 			if (strangerMarker != null) return true;
 
@@ -479,37 +554,37 @@ namespace CheeseTools {
 			return true;
 		}
 
-		private void UpdateLoopTimeText() {
-			bool showLoopTime = ModHelper.Config.GetSettingsValue<bool>("Show Loop Time");
-			if (showLoopTime && TimeLoop.IsTimeLoopEnabled() && TimeLoop.IsTimeFlowing()) {
-				loopTimeText.SetText($"Loop Time: [{TimeSpan.FromSeconds(TimeLoop.GetSecondsElapsed()).ToString(@"m\:ss")}]");
-				if (!Locator.GetPromptManager().GetScreenPromptList(PromptPosition.LowerLeft).Contains(loopTimeText)) {
-					Locator.GetPromptManager().AddScreenPrompt(loopTimeText, PromptPosition.LowerLeft, true);
-				}
-			}
-			else {
-				Locator.GetPromptManager().RemoveScreenPrompt(loopTimeText);
-			}
-		}
-
 		private void UpdateStrangerMarker() {
 			if (!InitStrangerMarker()) return;
-
-			bool visible = ModHelper.Config.GetSettingsValue<bool>("Mark Stranger Location") ? !isInDreamWorld && strangerMarker.GetMarkerDistance() > 1000 : false;
+			bool visible = ModHelper.Config.GetSettingsValue<bool>("Mark Stranger") && !Locator.GetDreamWorldController()._insideDream && strangerMarker.GetMarkerDistance() > 1000;
 			if (strangerMarker.IsVisible() != visible) {
 				strangerMarker.SetVisibility(visible);
-				Console.WriteLine($"Stranger marker visibility set to {visible}");
 			}
 		}
+	}
 
-		private void UpdateInfiniteResources() {
-			if (!hasInfResources) return;
-			PlayerResources resources = null;
-			Locator.GetPlayerTransform()?.TryGetComponent(out resources);
-			if (resources == null) return;
+	[HarmonyPatch]
+	public static class GamePatches {
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(PromptManager), nameof(PromptManager.SetPromptsVisible))]
+		public static bool PromptManager_SetPromptsVisible() {
+			return false;
+		}
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(ScreenPromptList), nameof(ScreenPromptList.OnPlayerDeath))]
+		public static bool ScreenPromptList_OnPlayerDeath(DeathType deathType) {
+			return deathType != DeathType.BigBang;
+		}
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(CosmicInflationController), nameof(CosmicInflationController.UpdateFormation))]
+		public static void CosmicInflationController_UpdateFormation() {
+			if (!CheeseTools.instrumentTimer.IsRunning || !CheeseTools.instance.ModHelper.Config.GetSettingsValue<bool>("Predict Instrument Hunt Time")) return;
 
-			resources.SetValue("_currentFuel", resources.GetValue<float>("_maxFuel"));
-			resources.SetValue("_currentOxygen", resources.GetValue<float>("_maxOxygen"));
+			var inflationController = GameObject.Find("InflationController").GetComponent<CosmicInflationController>();
+			if (inflationController._finishFormationTime >= 0f && inflationController._startFormationTime == Time.time) {
+				string predictedTime = TimeSpan.FromSeconds(CheeseTools.instrumentTimer.Elapsed.TotalSeconds + (inflationController._finishFormationTime - inflationController._startFormationTime) + 37f).ToString(@"m\:ss\.ff");
+				CheeseTools.AddScreenText($"Predicted Instrument Hunt Time: [{predictedTime}]", PromptPosition.LowerLeft);
+			}
 		}
 	}
 }
