@@ -14,6 +14,7 @@ namespace CheeseTools.Utils {
 		ATPPracticeState,
 		FeldsparringPracticeState,
 		VesselClipPracticeState,
+		ClonePracticeState,
 		InstrumentPracticeState,
 		CustomPracticeState1,
 		CustomPracticeState2,
@@ -53,7 +54,7 @@ namespace CheeseTools.Utils {
 			_keys = new HashSet<Key>();
 			try {
 				foreach (string keyString in keysString.Split('+')) {
-					Key key = (Key) Enum.Parse(Key.A.GetType(), keyString, true);
+					Key key = (Key) Enum.Parse(typeof(Key), keyString, true);
 					_keys.Add(key);
 				}
 			} catch(Exception) {

@@ -11,13 +11,12 @@ using UnityEngine.InputSystem.Controls;
 
 // planned:
 // - dude an always enable escape feature would be fire
-// - fast load new expedition keybind
 // - ship invincibility
 // - player invincibility
+// - fast load new expedition keybind
 // - stranger decloak
 
 //TODO:
-// - Clone practice state
 // - Warp practice state
 // - Village practice state
 // - Bramble practice state
@@ -33,7 +32,6 @@ namespace CheeseTools {
 		private static Keybinds keybinds = new Keybinds();
 		private static Action afterEyeWarp;
 		private static ScreenPrompt loopTimeText = new ScreenPrompt("");
-		private static CanvasMarker strangerMarker;
 		private static NomaiWarpTransmitter atpWarpTransmitter => GameObject.Find("Prefab_NOM_WarpTransmitter (1)")?.GetComponent<NomaiWarpTransmitter>();
 		private static NomaiWarpReceiver atpWarpReceiver => GameObject.Find("Interactibles_TimeLoopRing_Hidden/Prefab_NOM_WarpReceiver").GetComponent<NomaiWarpReceiver>();
 
@@ -259,6 +257,14 @@ namespace CheeseTools {
 				// so I just forcefully clear it. no clue if this breaks anything
 				StreamingManager.s_activeBundles.Clear();
 			}
+			else if (keybinds.Get(SettingKeybind.ClonePracticeState)?.WasPressedThisFrame() == true) {
+				inPracticeState = true;
+				WarpToEye(() => {
+					OWRigidbody eyeBody = GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody();
+					Locator.GetPlayerSuit().SuitUp(false, true);
+					Teleportation.TeleportPlayerTo(eyeBody, new RelativeLocationData(new Vector3(-80.616f, -3905.84f, 180.686f), Quaternion.identity, Vector3.zero));
+				});
+			}
 			else if (keybinds.Get(SettingKeybind.InstrumentPracticeState)?.WasPressedThisFrame() == true) {
 				inPracticeState = true;
 				WarpToEye(() => {
@@ -315,8 +321,9 @@ namespace CheeseTools {
 
 			keybinds.Add(SettingKeybind.ATPPracticeState, config.GetSettingsValue<string>("ATP Practice State"));
 			keybinds.Add(SettingKeybind.FeldsparringPracticeState, config.GetSettingsValue<string>("Ultimate Feldsparring Practice State"));
-			keybinds.Add(SettingKeybind.InstrumentPracticeState, config.GetSettingsValue<string>("Instrument Hunt Practice State"));
 			keybinds.Add(SettingKeybind.VesselClipPracticeState, config.GetSettingsValue<string>("Vessel Clip Practice State"));
+			keybinds.Add(SettingKeybind.ClonePracticeState, config.GetSettingsValue<string>("Clone Practice State"));
+			keybinds.Add(SettingKeybind.InstrumentPracticeState, config.GetSettingsValue<string>("Instrument Hunt Practice State"));
 
 			keybinds.Add(SettingKeybind.CustomPracticeState1, config.GetSettingsValue<string>("Custom Practice State 1"));
 			keybinds.Add(SettingKeybind.CustomPracticeState2, config.GetSettingsValue<string>("Custom Practice State 2"));
@@ -334,6 +341,9 @@ namespace CheeseTools {
 					instrumentTimer.Restart();
 				}
 				if (cloneTimer.IsRunning == true) {
+					if (ModHelper.Config.GetSettingsValue<bool>("Clone Trees Locator")) {
+						RemoveMarker("Trees Location");
+					}
 					cloneTimer.Stop();
 				}
 			}
@@ -342,6 +352,10 @@ namespace CheeseTools {
 
 				if (IsTimerEnabled("Clone Timer")) {
 					cloneTimer.Restart();
+					if (ModHelper.Config.GetSettingsValue<bool>("Clone Trees Locator")) {
+						CanvasMarker marker = GetOrCreateMarker("Trees Location", GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new Vector3(-54.48f, 1.00f, 5999.10f));
+						marker.SetVisibility(true);
+					}
 				}
 			}
 		}
@@ -485,6 +499,47 @@ namespace CheeseTools {
 			}
 		}
 
+		public static CanvasMarker GetMarker(string label) {
+			foreach (CanvasMarker marker in Locator.GetMarkerManager()._activeMarkers) {
+				if (marker._label == label) {
+					return marker;
+				}
+			}
+			return null;
+		}
+
+		public static CanvasMarker GetOrCreateMarker(string label, OWRigidbody targetBody) {
+			var markerManager = Locator.GetMarkerManager();
+			CanvasMarker marker = GetMarker(label);
+
+			if (marker == null) {
+				marker = markerManager.InstantiateNewMarker();
+				markerManager.RegisterMarker(marker, targetBody, label);
+			}
+
+			return marker;
+		}
+
+		public static CanvasMarker GetOrCreateMarker(string label, OWRigidbody parent, Vector3 localPosition) {
+			var markerManager = Locator.GetMarkerManager();
+			CanvasMarker marker = GetMarker(label);
+
+			if (marker == null) {
+				Transform transform = new GameObject($"CanvasMarker_{label}").transform;
+				transform.SetParent(parent.transform);
+				transform.localPosition = localPosition;
+
+				marker = markerManager.InstantiateNewMarker();
+				markerManager.RegisterMarker(marker, transform, label);
+			}
+
+			return marker;
+		}
+
+		public static void RemoveMarker(string label) {
+			GetMarker(label)?.DestroyMarker();
+		}
+
 		public static Vector3 ConvertStringToVector3(string str) {
 			string[] split = str.Split(',');
 			return split.Length == 3 && float.TryParse(split[0], out float x) && float.TryParse(split[1], out float y) && float.TryParse(split[2], out float z) ? new Vector3(x, y, z) : Vector3.zero;
@@ -542,20 +597,11 @@ namespace CheeseTools {
 			}
 		}
 
-		private bool InitStrangerMarker() {
-			if (strangerMarker != null) return true;
-
-			CanvasMarkerManager markerManager = Locator.GetMarkerManager();
-			OWRigidbody stranger = Locator.GetAstroObject(AstroObject.Name.RingWorld)?.GetOWRigidbody();
-			if (markerManager == null || stranger == null) return false;
-
-			strangerMarker = markerManager.InstantiateNewMarker();
-			markerManager.RegisterMarker(strangerMarker, stranger, "THE STRANGER");
-			return true;
-		}
-
 		private void UpdateStrangerMarker() {
-			if (!InitStrangerMarker()) return;
+			var stranger = Locator.GetAstroObject(AstroObject.Name.RingWorld)?.GetOWRigidbody();
+			if (stranger == null) return;
+
+			var strangerMarker = GetOrCreateMarker("THE STRANGER", stranger);
 			bool visible = ModHelper.Config.GetSettingsValue<bool>("Mark Stranger") && !Locator.GetDreamWorldController()._insideDream && strangerMarker.GetMarkerDistance() > 1000;
 			if (strangerMarker.IsVisible() != visible) {
 				strangerMarker.SetVisibility(visible);
@@ -582,7 +628,8 @@ namespace CheeseTools {
 
 			var inflationController = GameObject.Find("InflationController").GetComponent<CosmicInflationController>();
 			if (inflationController._finishFormationTime >= 0f && inflationController._startFormationTime == Time.time) {
-				string predictedTime = TimeSpan.FromSeconds(CheeseTools.instrumentTimer.Elapsed.TotalSeconds + (inflationController._finishFormationTime - inflationController._startFormationTime) + 37f).ToString(@"m\:ss\.ff");
+				float bigBangTime = 37f; // scout boosting to big bang is considered but times can vary. this is just an estimation.
+				string predictedTime = TimeSpan.FromSeconds(CheeseTools.instrumentTimer.Elapsed.TotalSeconds + (inflationController._finishFormationTime - inflationController._startFormationTime) + bigBangTime).ToString(@"m\:ss\.ff");
 				CheeseTools.AddScreenText($"Predicted Instrument Hunt Time: [{predictedTime}]", PromptPosition.LowerLeft);
 			}
 		}

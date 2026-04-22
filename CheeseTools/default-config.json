@@ -50,6 +50,7 @@
     "     ": { "type": "separator" },
     "Clone Practice State": "P+Digit4",
     "Clone Timer": false,
+    "Clone Trees Locator": false,
 
     "      ": { "type": "separator" },
     "Instrument Hunt Practice State": "P+Digit5",
