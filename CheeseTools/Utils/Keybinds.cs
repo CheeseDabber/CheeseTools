@@ -13,6 +13,7 @@ namespace CheeseTools.Utils {
 		EnterExitDreamWorld,
 		ATPPracticeState,
 		FeldsparringPracticeState,
+		VesselPracticeState,
 		VesselClipPracticeState,
 		ClonePracticeState,
 		InstrumentPracticeState,
@@ -24,21 +25,21 @@ namespace CheeseTools.Utils {
 	public class Keybinds {
 		private Dictionary<SettingKeybind, Keybind> _keybinds = new Dictionary<SettingKeybind, Keybind>();
 
-		public void Add(SettingKeybind option, string keysString) {
+		public void Add(SettingKeybind setting, string keysString) {
 			Keybind keybind = new Keybind();
 			if (!keybind.Init(keysString)) {
-				CheeseTools.Console.WriteLine($"Invalid keybind for {Enum.GetName(option.GetType(), option)}. \"{keysString}\" is not recognized.", MessageType.Warning);
+				CheeseTools.Console.WriteLine($"Invalid keybind for {Enum.GetName(setting.GetType(), setting)}. \"{keysString}\" is not recognized.", MessageType.Warning);
 				return;
 			}
-			_keybinds[option] = keybind;
+			_keybinds[setting] = keybind;
 		}
 
-		public void Remove(SettingKeybind option) {
-			_keybinds.Remove(option);
+		public void Remove(SettingKeybind setting) {
+			_keybinds.Remove(setting);
 		}
 
-		public Keybind Get(SettingKeybind option) {
-			return _keybinds.TryGetValue(option, out var value) ? value : null;
+		public Keybind Get(SettingKeybind setting) {
+			return _keybinds.TryGetValue(setting, out var value) ? value : null;
 		}
 
 		public void Clear() {

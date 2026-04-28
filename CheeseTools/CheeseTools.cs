@@ -16,8 +16,6 @@ using UnityEngine.InputSystem.Controls;
 // - stranger decloak
 
 //TODO:
-// - Warp practice state
-// - Village practice state
 // - Bramble practice state
 // - ATP interior pratice state
 // - Make sleepuntil not put you at campfire and maybe add like a warning if it is over sleep time
@@ -198,11 +196,23 @@ namespace CheeseTools {
 			else if (keybinds.Get(SettingKeybind.FeldsparringPracticeState)?.WasPressedThisFrame() == true) {
 				inPracticeState = true;
 				Locator.GetPlayerSuit().SuitUp(false, true);
+				RepairShip();
 				OWRigidbody ship = Locator.GetShipBody();
 				RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(508.07f, 84.54f, -3248.96f), Quaternion.Euler(new Vector3(0.94f, 350.39f, 265.78f)), Vector3.zero);
-				Teleportation.TeleportPlayerToShip(true);
+				Teleportation.TeleportPlayerToShip();
 				Teleportation.TeleportBodyTo(ship, Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody(), shipLocation);
 				ship.SetVelocity(Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody().GetVelocity() + ship.transform.forward * 1150);
+				Items.PickUpItem(Items.GetWarpCore());
+			}
+			else if (keybinds.Get(SettingKeybind.VesselPracticeState)?.WasPressedThisFrame() == true) {
+				inPracticeState = true;
+				Locator.GetPlayerSuit().SuitUp(false, true);
+				RepairShip();
+				OWRigidbody ship = Locator.GetShipBody();
+				RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(175.26f, -291.37f, -179.26f), Quaternion.Euler(27.46f, 111.93f, 285.54f), Vector3.zero);
+				Teleportation.TeleportPlayerToShip();
+				Teleportation.TeleportBodyTo(ship, Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody(), shipLocation);
+				ship.SetVelocity(Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody().GetVelocity() + ship.transform.forward * 50);
 				Items.PickUpItem(Items.GetWarpCore());
 			}
 			else if (keybinds.Get(SettingKeybind.VesselClipPracticeState)?.WasPressedThisFrame() == true) {
@@ -286,9 +296,9 @@ namespace CheeseTools {
 				CustomPracticeState(3);
 			}
 			// dev keybind for testing
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
+			//else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
 
-			}
+			//}
 
 			// Fixes weird bug of instantly going into settings upon pressing escape in 1.1.12 when using OWML
 			//else if (Keyboard.current[Key.Escape].wasPressedThisFrame) {
@@ -321,6 +331,7 @@ namespace CheeseTools {
 
 			keybinds.Add(SettingKeybind.ATPPracticeState, config.GetSettingsValue<string>("ATP Practice State"));
 			keybinds.Add(SettingKeybind.FeldsparringPracticeState, config.GetSettingsValue<string>("Ultimate Feldsparring Practice State"));
+			keybinds.Add(SettingKeybind.VesselPracticeState, config.GetSettingsValue<string>("Vessel Practice State"));
 			keybinds.Add(SettingKeybind.VesselClipPracticeState, config.GetSettingsValue<string>("Vessel Clip Practice State"));
 			keybinds.Add(SettingKeybind.ClonePracticeState, config.GetSettingsValue<string>("Clone Practice State"));
 			keybinds.Add(SettingKeybind.InstrumentPracticeState, config.GetSettingsValue<string>("Instrument Hunt Practice State"));
@@ -420,6 +431,20 @@ namespace CheeseTools {
 				if (IsTimerEnabled("ATP Interior Timer")) {
 					atpInteriorTimer.Restart();
 				}
+			}
+		}
+
+		public static void RepairShip() {
+			ShipDamageController damageController = Locator.GetShipTransform()?.GetComponent<ShipDamageController>();
+			if (damageController == null) return;
+
+			foreach (ShipHull hull in damageController._shipHulls) {
+				hull._integrity = 1f;
+				hull.RepairTick();
+			}
+
+			foreach(ShipComponent component in damageController._shipComponents) {
+				component.SetDamaged(false);
 			}
 		}
 

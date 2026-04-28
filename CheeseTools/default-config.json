@@ -41,19 +41,20 @@
     "   ": { "type": "separator" },
     "Ultimate Feldsparring Practice State": "P+Digit2",
     "Ultimate Feldsparring Timer": false,
-    "Warp Timer": false,
 
     "    ": { "type": "separator" },
-    "Vessel Clip Practice State": "P+Digit3",
+    "Vessel Practice State": "P+Digit3",
+    "Vessel Clip Practice State": "P+Digit4",
+    "Warp Timer": false,
     "Observe Timer": false,
 
     "     ": { "type": "separator" },
-    "Clone Practice State": "P+Digit4",
+    "Clone Practice State": "P+Digit5",
     "Clone Timer": false,
     "Clone Trees Locator": false,
 
     "      ": { "type": "separator" },
-    "Instrument Hunt Practice State": "P+Digit5",
+    "Instrument Hunt Practice State": "P+Digit6",
     "Instrument Hunt Timer": false,
     "Predict Instrument Hunt Time": false,
 
