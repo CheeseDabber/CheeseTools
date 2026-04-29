@@ -4,6 +4,8 @@
   "settings": {
     "Infinite Fuel": false,
     "Infinite Oxygen": false,
+    "Player Invincibility": false,
+    "Ship Invincibility": false,
     "Create Launch Codes Save": false,
     "Show Loop Time": false,
     "Mark Stranger": false,

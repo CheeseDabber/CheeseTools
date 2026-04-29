@@ -9,17 +9,13 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
-// planned:
-// - ship invincibility
-// - player invincibility
+// TODO:
 // - fast load new expedition keybind
-// - stranger decloak
-
-//TODO:
+// - Make sleepuntil not put you at campfire and maybe add like a warning if it is over sleep time
 // - Bramble practice state
 // - ATP interior pratice state
-// - Make sleepuntil not put you at campfire and maybe add like a warning if it is over sleep time
 // - Custom practice state settings like loop time and put on suit
+// - stranger decloak
 
 namespace CheeseTools {
 	public class CheeseTools : ModBehaviour {
@@ -117,6 +113,9 @@ namespace CheeseTools {
 			else {
 
 			}
+
+			if (Locator.GetPlayerBody() == null) return;
+			UpdateInvincibility();
 		}
 
 		public void Update() {
@@ -306,7 +305,11 @@ namespace CheeseTools {
 			//}
 		}
 
+		private int lastFrameConfigureGotCalled = -1;
 		public override void Configure(IModConfig config) {
+			if (lastFrameConfigureGotCalled == Time.frameCount) return;
+			lastFrameConfigureGotCalled = Time.frameCount;
+
 			if (Locator.GetPlayerSectorDetector() != null) {
 				bool showSector = config.GetSettingsValue<bool>("Show Sectors");
 				if (showSector) {
@@ -339,6 +342,9 @@ namespace CheeseTools {
 			keybinds.Add(SettingKeybind.CustomPracticeState1, config.GetSettingsValue<string>("Custom Practice State 1"));
 			keybinds.Add(SettingKeybind.CustomPracticeState2, config.GetSettingsValue<string>("Custom Practice State 2"));
 			keybinds.Add(SettingKeybind.CustomPracticeState3, config.GetSettingsValue<string>("Custom Practice State 3"));
+
+			if (Locator.GetPlayerBody() == null) return;
+			UpdateInvincibility();
 		}
 
 		public void OnStartVesselWarp() {
@@ -591,6 +597,21 @@ namespace CheeseTools {
 					resources.SetValue("_currentFuel", resources.GetValue<float>("_maxFuel"));
 				if (infOxygen)
 					resources.SetValue("_currentOxygen", resources.GetValue<float>("_maxOxygen"));
+			}
+		}
+
+		private void UpdateInvincibility() {
+			bool shipInvincible = ModHelper.Config.GetSettingsValue<bool>("Ship Invincibility");
+			ShipDamageController damageController = Locator.GetShipTransform()?.GetComponent<ShipDamageController>();
+			damageController._invincible = shipInvincible;
+			if (shipInvincible) RepairShip();
+
+			bool playerInvincible = ModHelper.Config.GetSettingsValue<bool>("Player Invincibility");
+			PlayerResources resources = Locator.GetPlayerTransform()?.GetComponent<PlayerResources>();
+			resources._invincible = playerInvincible;
+			if (playerInvincible) {
+				resources._currentHealth = PlayerResources._maxHealth;
+				resources.PatchAllPunctures();
 			}
 		}
 
