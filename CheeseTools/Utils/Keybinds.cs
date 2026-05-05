@@ -2,6 +2,7 @@
 using UnityEngine.InputSystem;
 using System;
 using OWML.Common;
+using System.Linq;
 
 namespace CheeseTools.Utils {
 	public enum SettingKeybind {
@@ -10,6 +11,7 @@ namespace CheeseTools.Utils {
 		LogPlayerLocation,
 		LogShipLocation,
 		TeleportShipToPlayer,
+		FastLoadNewExpedition,
 		EnterExitDreamWorld,
 		ATPPracticeState,
 		FeldsparringPracticeState,
@@ -40,6 +42,10 @@ namespace CheeseTools.Utils {
 
 		public Keybind Get(SettingKeybind setting) {
 			return _keybinds.TryGetValue(setting, out var value) ? value : null;
+		}
+
+		public Dictionary<SettingKeybind, Keybind> GetAll() {
+			return _keybinds;
 		}
 
 		public void Clear() {
@@ -78,7 +84,11 @@ namespace CheeseTools.Utils {
 
 			if (isPressed && !wasPressed) {
 				_wasPressed = true;
-			}	
+
+				SettingKeybind setting = CheeseTools.keybinds.GetAll().First(x => x.Value == this).Key;
+				if (setting.ToString().Contains("PracticeState"))
+					CheeseTools.instance.OnPracticeState();
+			}
 			if (!isPressed) {
 				_wasPressed = false;
 			}

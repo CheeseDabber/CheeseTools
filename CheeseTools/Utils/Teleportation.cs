@@ -30,7 +30,7 @@ namespace CheeseTools.Utils {
 			gravityVolume.AddObjectToVolume(Locator.GetPlayerDetector());
 			gravityVolume.AddObjectToVolume(Locator.GetPlayerCameraDetector());
 
-			//hacky fix for bug where gravity doesn't apply when seated
+			// hacky fix for bug where gravity doesn't apply when seated
 			ShipCockpitController cockpitController = GameObject.FindObjectOfType<ShipCockpitController>();
 			cockpitController.ExitFlightConsole();
 			cockpitController.CompleteExitFlightConsole();

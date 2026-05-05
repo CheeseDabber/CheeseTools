@@ -19,6 +19,7 @@
     "Log Player Location": "Slash+RightBracket",
     "Log Ship Location": "Slash+LeftBracket",
     "Teleport Ship To Player": "Slash+Backquote",
+    "Fast Load New Expedition": "Slash+R",
     "Enter/Exit DreamWorld": "Slash+L",
     "DreamWorld Enter Campfire": {
       "type": "selector",

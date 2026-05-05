@@ -10,24 +10,30 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // TODO:
-// - fast load new expedition keybind
-// - Make sleepuntil not put you at campfire and maybe add like a warning if it is over sleep time
-// - Bramble practice state
+// - sleepuntil auto reload scene if timeloop above sleep time
+// - make sleepuntil campfire not move player towards campfire and make sure it works everywhere in the solarsystem
 // - ATP interior pratice state
-// - Custom practice state settings like loop time and put on suit
+// - bramble practice state
+// - custom practice state settings like loop time and put on suit
 // - stranger decloak
+// - https://owml.outerwildsmods.com/guides/rebinding/ uhmm apparently made the keybinds class for nothing cause this exists??
+
+// Bugs:
+// - if you start practice state while sleeping in campfire the game gets really laggy
+// - if you start non-ship practice state while seated in ship your position doesn't get set
 
 namespace CheeseTools {
 	public class CheeseTools : ModBehaviour {
 		public static CheeseTools instance;
 		public static IModConsole Console => instance.ModHelper.Console;
+		public static Keybinds keybinds = new Keybinds();
+		public static Action afterSceneLoad;
 
-		private static Keybinds keybinds = new Keybinds();
-		private static Action afterEyeWarp;
 		private static ScreenPrompt loopTimeText = new ScreenPrompt("");
 		private static NomaiWarpTransmitter atpWarpTransmitter => GameObject.Find("Prefab_NOM_WarpTransmitter (1)")?.GetComponent<NomaiWarpTransmitter>();
 		private static NomaiWarpReceiver atpWarpReceiver => GameObject.Find("Interactibles_TimeLoopRing_Hidden/Prefab_NOM_WarpReceiver").GetComponent<NomaiWarpReceiver>();
 
+		private static int fixedUpdateCount = 0;
 		private static bool isSleeping = false;
 		private static Campfire campfire;
 		private static double wakeUpTime = 0;
@@ -54,8 +60,8 @@ namespace CheeseTools {
 			new Harmony("CheeseRunner1.CheeseTools").PatchAll(Assembly.GetExecutingAssembly());
 
 			OnCompleteSceneLoad(OWScene.TitleScreen, OWScene.TitleScreen);
-			LoadManager.OnCompleteSceneLoad += (OWScene previousScene, OWScene newScene) => { 
-				ModHelper.Events.Unity.FireOnNextUpdate(() => { OnCompleteSceneLoad(previousScene, newScene); }); 
+			LoadManager.OnCompleteSceneLoad += (OWScene previousScene, OWScene newScene) => {
+				ModHelper.Events.Unity.FireOnNextUpdate(() => { OnCompleteSceneLoad(previousScene, newScene); });
 			};
 
 			GlobalMessenger.AddListener("StopSleepingAtCampfire", OnStopSleepingAtCampfire);
@@ -68,6 +74,7 @@ namespace CheeseTools {
 
 		public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene) {
 			//Console.WriteLine($"previousScene: {previousScene}, newScene: {newScene}");
+			fixedUpdateCount = 0;
 
 			if (newScene == OWScene.SolarSystem) {
 				Locator.GetPlayerSectorDetector().OnEnterSector += OnEnterSector;
@@ -92,14 +99,9 @@ namespace CheeseTools {
 				if (IsTimerEnabled("Observe Timer")) {
 					observeTimer.Restart();
 				}
-				if (afterEyeWarp != null) {
-					ModHelper.Events.Unity.FireOnNextUpdate(() => {
-						afterEyeWarp();
-					});
-				}
 			}
 			else {
-				afterEyeWarp = null;
+
 			}
 			if (newScene == OWScene.TitleScreen) {
 				inPracticeState = false;
@@ -128,6 +130,19 @@ namespace CheeseTools {
 			UpdateStrangerMarker();
 			ScreenTimerController.Update();
 			Locator.GetPauseCommandListener().enabled = true;
+		}
+
+		public void FixedUpdate() {
+			fixedUpdateCount++;
+
+			if (fixedUpdateCount == 2) {
+				if (afterSceneLoad != null) {
+					ModHelper.Events.Unity.FireOnNextUpdate(() => {
+						afterSceneLoad();
+						afterSceneLoad = null;
+					});
+				}
+			}
 		}
 
 		private void CheckInput() {
@@ -170,120 +185,6 @@ namespace CheeseTools {
 					DreamWorldUtil.ExitDreamWorld();
 				}
 			}
-			//Practice States
-			else if (keybinds.Get(SettingKeybind.ATPPracticeState)?.WasPressedThisFrame() == true) {
-				string timeStr = ModHelper.Config.GetSettingsValue<string>("ATP Loop Time");
-				if (!Double.TryParse(timeStr, out Double sleepTime)) {
-					Console.WriteLine($"Invalid ATP Loop Time: \"{timeStr}\" is not recognized", MessageType.Warning);
-					return;
-				}
-
-				inPracticeState = true;
-				SleepUntil(sleepTime, () => {
-					RelativeLocationData location = new RelativeLocationData(new Vector3(17.74f, -44.73f, 185.74f), Quaternion.Euler(new Vector3(294.14f, 63.13f, 124.75f)), Vector3.zero);
-					Teleportation.TeleportPlayerTo(Locator.GetAstroObject(AstroObject.Name.TimberHearth).GetOWRigidbody(), location);
-					Locator.GetPlayerSuit().SuitUp(false, true);
-
-					if (IsTimerEnabled("ATP Exit Timer")) {
-						atpExitTimer.Restart();
-					}
-					if (IsTimerEnabled("ATP Enter Timer")) {
-						atpEnterTimer.Restart();
-					}
-				});
-			}
-			else if (keybinds.Get(SettingKeybind.FeldsparringPracticeState)?.WasPressedThisFrame() == true) {
-				inPracticeState = true;
-				Locator.GetPlayerSuit().SuitUp(false, true);
-				RepairShip();
-				OWRigidbody ship = Locator.GetShipBody();
-				RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(508.07f, 84.54f, -3248.96f), Quaternion.Euler(new Vector3(0.94f, 350.39f, 265.78f)), Vector3.zero);
-				Teleportation.TeleportPlayerToShip();
-				Teleportation.TeleportBodyTo(ship, Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody(), shipLocation);
-				ship.SetVelocity(Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody().GetVelocity() + ship.transform.forward * 1150);
-				Items.PickUpItem(Items.GetWarpCore());
-			}
-			else if (keybinds.Get(SettingKeybind.VesselPracticeState)?.WasPressedThisFrame() == true) {
-				inPracticeState = true;
-				Locator.GetPlayerSuit().SuitUp(false, true);
-				RepairShip();
-				OWRigidbody ship = Locator.GetShipBody();
-				RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(175.26f, -291.37f, -179.26f), Quaternion.Euler(27.46f, 111.93f, 285.54f), Vector3.zero);
-				Teleportation.TeleportPlayerToShip();
-				Teleportation.TeleportBodyTo(ship, Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody(), shipLocation);
-				ship.SetVelocity(Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody().GetVelocity() + ship.transform.forward * 50);
-				Items.PickUpItem(Items.GetWarpCore());
-			}
-			else if (keybinds.Get(SettingKeybind.VesselClipPracticeState)?.WasPressedThisFrame() == true) {
-				inPracticeState = true;
-				Locator.GetPlayerSuit().SuitUp(false, true);
-				Teleportation.TeleportPlayerTo(GameObject.Find("DB_VesselDimension_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(175.66f, 13.39f, -19.34f), Quaternion.Euler(353.87f, 95.65f, 12.28f), Vector3.zero));
-				
-				VesselWarpController warpController = GameObject.Find("WarpController").GetComponent<VesselWarpController>();
-				warpController._coreSocket.PlaceIntoSocket(Items.GetWarpCore());
-				warpController._cageAnimator._transform.localPosition = new Vector3(0f, -8.1f, 0f);
-				warpController._cageAnimator._transform.localRotation = Quaternion.Euler(new Vector3(0f, 180f, 0f));
-				warpController._cageTrigger.OnExit -= warpController.OnExitCageTrigger;
-				warpController._cageClosed = true;
-
-				OWTriggerVolume gravityTrigger = GameObject.Find("GravityOxygenVolume_VesselBridge").GetComponent<OWTriggerVolume>();
-				gravityTrigger.AddObjectToVolume(Locator.GetPlayerDetector());
-				gravityTrigger.AddObjectToVolume(Locator.GetPlayerCameraDetector());
-
-				NomaiInterfaceSlot vesselSlot = GameObject.Find("VesselWarpSlot").GetComponent<NomaiInterfaceSlot>();
-				powerOrb.SetOrbPosition(vesselSlot.transform.position);
-
-				NomaiCoordinateInterface coordinateInterface = warpController._coordinateInterface;
-				coordinateInterface._pillarRoot.localPosition = new Vector3(coordinateInterface._pillarRoot.localPosition.x, 0f, coordinateInterface._pillarRoot.localPosition.z);
-				coordinateInterface._pillarRaised = true;
-				coordinateInterface._updateHeight = false;
-
-				coordinateInterface._degrees = 240;
-				coordinateInterface._basePivot.localEulerAngles = Vector3.up * coordinateInterface._degrees;
-				coordinateInterface._activePanelIndex = 2;
-				coordinateInterface._rotatingToPanel = false;
-
-				coordinateInterface._upperOrb.RemoveAllLocks();
-				coordinateInterface._upperOrb.AddLock();
-				coordinateInterface._orb._lockCount = 1;
-				coordinateInterface._orb._orbBody.Unsuspend();
-
-				coordinateInterface._orb._isBeingDragged = false;
-				coordinateInterface._rotateSlots[1]._occupyingOrb = coordinateInterface._orb;
-				coordinateInterface._orb.SetOrbPosition(coordinateInterface._rotateSlots[1].transform.position);
-
-				coordinateInterface._gateAnimators[0]._transform.localPosition = coordinateInterface._gateAnimators[0]._origLocalPosition;
-				coordinateInterface._gateAnimators[1]._transform.localPosition = coordinateInterface._gateAnimators[1]._origLocalPosition;
-				coordinateInterface._gateAnimators[2]._transform.localPosition = coordinateInterface._gateAnimators[2]._origLocalPosition;
-				coordinateInterface._gateAnimators[3]._transform.localPosition = coordinateInterface._gateAnimators[3]._origLocalPosition;
-				coordinateInterface._gateAnimators[3]._transform.localPosition = -coordinateInterface._gateAnimators[3]._transform.forward;
-
-				SetCoordinate(coordinateInterface._nodeControllers[0], coordinateInterface._coordinateX);
-				SetCoordinate(coordinateInterface._nodeControllers[1], coordinateInterface._coordinateY);
-				SetCoordinate(coordinateInterface._nodeControllers[2], coordinateInterface._coordinateZ);
-
-				// if you warp before bundles are loaded the game gets stuck infinitely loading.
-				// so I just forcefully clear it. no clue if this breaks anything
-				StreamingManager.s_activeBundles.Clear();
-			}
-			else if (keybinds.Get(SettingKeybind.ClonePracticeState)?.WasPressedThisFrame() == true) {
-				inPracticeState = true;
-				WarpToEye(() => {
-					OWRigidbody eyeBody = GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody();
-					Locator.GetPlayerSuit().SuitUp(false, true);
-					Teleportation.TeleportPlayerTo(eyeBody, new RelativeLocationData(new Vector3(-80.616f, -3905.84f, 180.686f), Quaternion.identity, Vector3.zero));
-				});
-			}
-			else if (keybinds.Get(SettingKeybind.InstrumentPracticeState)?.WasPressedThisFrame() == true) {
-				inPracticeState = true;
-				WarpToEye(() => {
-					Locator.GetEyeStateManager().SetState(EyeState.ForestIsDark);
-					Teleportation.TeleportPlayerTo(GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-54.48f, 1.00f, 5999.10f), Quaternion.Euler(0.00f, 94.03f, 0.00f), Vector3.zero));
-					Locator.GetFlashlight().TurnOn();
-					Locator.GetToolModeSwapper().EquipToolMode(ToolMode.SignalScope);
-					Locator.GetToolModeSwapper().GetSignalScope()._targetFOV = 60f;
-				}); 
-			}
 			// Custom Practice States
 			else if (keybinds.Get(SettingKeybind.CustomPracticeState1)?.WasPressedThisFrame() == true) {
 				CustomPracticeState(1);
@@ -294,15 +195,128 @@ namespace CheeseTools {
 			else if (keybinds.Get(SettingKeybind.CustomPracticeState3)?.WasPressedThisFrame() == true) {
 				CustomPracticeState(3);
 			}
-			// dev keybind for testing
-			//else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
 
-			//}
+			if (afterSceneLoad != null) return;
 
-			// Fixes weird bug of instantly going into settings upon pressing escape in 1.1.12 when using OWML
-			//else if (Keyboard.current[Key.Escape].wasPressedThisFrame) {
-			//	Locator.GetMenuInputModule().ProcessMouseEvent();
-			//}
+			if (keybinds.Get(SettingKeybind.FastLoadNewExpedition)?.WasPressedThisFrame() == true) {
+				LoadSolarSystemScene(() => { });
+			}
+			//Practice States
+			else if (keybinds.Get(SettingKeybind.ATPPracticeState)?.WasPressedThisFrame() == true) {
+				string timeStr = ModHelper.Config.GetSettingsValue<string>("ATP Loop Time");
+				if (!Double.TryParse(timeStr, out Double sleepTime)) {
+					Console.WriteLine($"Invalid ATP Loop Time: \"{timeStr}\" is not recognized", MessageType.Warning);
+					return;
+				}
+
+				LoadSceneIfNotInScene(OWScene.SolarSystem, () => {
+					SleepUntil(sleepTime, () => {
+						RelativeLocationData location = new RelativeLocationData(new Vector3(17.74f, -44.73f, 185.74f), Quaternion.Euler(new Vector3(294.14f, 63.13f, 124.75f)), Vector3.zero);
+						Teleportation.TeleportPlayerTo(Locator.GetAstroObject(AstroObject.Name.TimberHearth).GetOWRigidbody(), location);
+						Locator.GetPlayerSuit().SuitUp(false, true);
+
+						if (IsTimerEnabled("ATP Exit Timer")) {
+							atpExitTimer.Restart();
+						}
+						if (IsTimerEnabled("ATP Enter Timer")) {
+							atpEnterTimer.Restart();
+						}
+					});
+				});
+			}
+			else if (keybinds.Get(SettingKeybind.FeldsparringPracticeState)?.WasPressedThisFrame() == true) {
+				LoadSolarSystemScene(() => {
+					Locator.GetPlayerSuit().SuitUp(false, true);
+					RepairShip();
+					OWRigidbody ship = Locator.GetShipBody();
+					RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(508.07f, 84.54f, -3248.96f), Quaternion.Euler(new Vector3(0.94f, 350.39f, 265.78f)), Vector3.zero);
+					Teleportation.TeleportPlayerToShip();
+					Teleportation.TeleportBodyTo(ship, Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody(), shipLocation);
+					ship.SetVelocity(Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody().GetVelocity() + ship.transform.forward * 1150);
+					Items.PickUpItem(Items.GetWarpCore());
+				});
+			}
+			else if (keybinds.Get(SettingKeybind.VesselPracticeState)?.WasPressedThisFrame() == true) {
+				LoadSolarSystemScene(() => {
+					Locator.GetPlayerSuit().SuitUp(false, true);
+					RepairShip();
+					OWRigidbody ship = Locator.GetShipBody();
+					RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(175.26f, -291.37f, -179.26f), Quaternion.Euler(27.46f, 111.93f, 285.54f), Vector3.zero);
+					Teleportation.TeleportPlayerToShip();
+					Teleportation.TeleportBodyTo(ship, Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody(), shipLocation);
+					ship.SetVelocity(Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody().GetVelocity() + ship.transform.forward * 50);
+					Items.PickUpItem(Items.GetWarpCore());
+				});
+			}
+			else if (keybinds.Get(SettingKeybind.VesselClipPracticeState)?.WasPressedThisFrame() == true) {
+				LoadSceneIfNotInScene(OWScene.SolarSystem, () => {
+					Locator.GetPlayerSuit().SuitUp(false, true);
+					Teleportation.TeleportPlayerTo(GameObject.Find("DB_VesselDimension_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(175.66f, 13.39f, -19.34f), Quaternion.Euler(353.87f, 95.65f, 12.28f), Vector3.zero));
+
+					VesselWarpController warpController = GameObject.Find("WarpController").GetComponent<VesselWarpController>();
+					warpController._coreSocket.PlaceIntoSocket(Items.GetWarpCore());
+					warpController._cageAnimator._transform.localPosition = new Vector3(0f, -8.1f, 0f);
+					warpController._cageAnimator._transform.localRotation = Quaternion.Euler(new Vector3(0f, 180f, 0f));
+					warpController._cageTrigger.OnExit -= warpController.OnExitCageTrigger;
+					warpController._cageClosed = true;
+
+					OWTriggerVolume gravityTrigger = GameObject.Find("GravityOxygenVolume_VesselBridge").GetComponent<OWTriggerVolume>();
+					gravityTrigger.AddObjectToVolume(Locator.GetPlayerDetector());
+					gravityTrigger.AddObjectToVolume(Locator.GetPlayerCameraDetector());
+
+					NomaiInterfaceSlot vesselSlot = GameObject.Find("VesselWarpSlot").GetComponent<NomaiInterfaceSlot>();
+					powerOrb.SetOrbPosition(vesselSlot.transform.position);
+
+					NomaiCoordinateInterface coordinateInterface = warpController._coordinateInterface;
+					coordinateInterface._pillarRoot.localPosition = new Vector3(coordinateInterface._pillarRoot.localPosition.x, 0f, coordinateInterface._pillarRoot.localPosition.z);
+					coordinateInterface._pillarRaised = true;
+					coordinateInterface._updateHeight = false;
+
+					coordinateInterface._degrees = 240;
+					coordinateInterface._basePivot.localEulerAngles = Vector3.up * coordinateInterface._degrees;
+					coordinateInterface._activePanelIndex = 2;
+					coordinateInterface._rotatingToPanel = false;
+
+					coordinateInterface._upperOrb.RemoveAllLocks();
+					coordinateInterface._upperOrb.AddLock();
+					coordinateInterface._orb._lockCount = 1;
+					coordinateInterface._orb._orbBody.Unsuspend();
+
+					coordinateInterface._orb._isBeingDragged = false;
+					coordinateInterface._rotateSlots[1]._occupyingOrb = coordinateInterface._orb;
+					coordinateInterface._orb.SetOrbPosition(coordinateInterface._rotateSlots[1].transform.position);
+
+					coordinateInterface._gateAnimators[0]._transform.localPosition = coordinateInterface._gateAnimators[0]._origLocalPosition;
+					coordinateInterface._gateAnimators[1]._transform.localPosition = coordinateInterface._gateAnimators[1]._origLocalPosition;
+					coordinateInterface._gateAnimators[2]._transform.localPosition = coordinateInterface._gateAnimators[2]._origLocalPosition;
+					coordinateInterface._gateAnimators[3]._transform.localPosition = coordinateInterface._gateAnimators[3]._origLocalPosition;
+					coordinateInterface._gateAnimators[3]._transform.localPosition = -coordinateInterface._gateAnimators[3]._transform.forward;
+
+					SetCoordinate(coordinateInterface._nodeControllers[0], coordinateInterface._coordinateX);
+					SetCoordinate(coordinateInterface._nodeControllers[1], coordinateInterface._coordinateY);
+					SetCoordinate(coordinateInterface._nodeControllers[2], coordinateInterface._coordinateZ);
+
+					// if you warp before bundles are loaded the game gets stuck infinitely loading.
+					// so I just forcefully clear it. no clue if this breaks anything
+					StreamingManager.s_activeBundles.Clear();
+				});
+			}
+			else if (keybinds.Get(SettingKeybind.ClonePracticeState)?.WasPressedThisFrame() == true) {
+				LoadEyeScene(() => {
+					OWRigidbody eyeBody = GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody();
+					Locator.GetPlayerSuit().SuitUp(false, true);
+					Teleportation.TeleportPlayerTo(eyeBody, new RelativeLocationData(new Vector3(-80.616f, -3905.84f, 180.686f), Quaternion.identity, Vector3.zero));
+				});
+			}
+			else if (keybinds.Get(SettingKeybind.InstrumentPracticeState)?.WasPressedThisFrame() == true) {
+				LoadEyeScene(() => {
+					Locator.GetEyeStateManager().SetState(EyeState.ForestIsDark);
+					Teleportation.TeleportPlayerTo(GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-54.48f, 1.00f, 5999.10f), Quaternion.Euler(0.00f, 94.03f, 0.00f), Vector3.zero));
+					Locator.GetFlashlight().TurnOn();
+					Locator.GetToolModeSwapper().EquipToolMode(ToolMode.SignalScope);
+					Locator.GetToolModeSwapper().GetSignalScope()._targetFOV = 60f;
+				});
+			}
 		}
 
 		private int lastFrameConfigureGotCalled = -1;
@@ -310,26 +324,13 @@ namespace CheeseTools {
 			if (lastFrameConfigureGotCalled == Time.frameCount) return;
 			lastFrameConfigureGotCalled = Time.frameCount;
 
-			if (Locator.GetPlayerSectorDetector() != null) {
-				bool showSector = config.GetSettingsValue<bool>("Show Sectors");
-				if (showSector) {
-					foreach (Sector sector in Locator.GetPlayerSectorDetector()._sectorList) {
-						AddScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
-					}
-				}
-				else {
-					foreach (Sector sector in Locator.GetPlayerSectorDetector()._sectorList) {
-						RemoveScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
-					}
-				}
-			}
-
 			keybinds.Clear();
 			keybinds.Add(SettingKeybind.ToggleSuit, config.GetSettingsValue<string>("Toggle Suit"));
 			keybinds.Add(SettingKeybind.ToggleSpeedup, config.GetSettingsValue<string>("Toggle Speedup"));
 			keybinds.Add(SettingKeybind.LogPlayerLocation, config.GetSettingsValue<string>("Log Player Location"));
 			keybinds.Add(SettingKeybind.LogShipLocation, config.GetSettingsValue<string>("Log Ship Location"));
 			keybinds.Add(SettingKeybind.TeleportShipToPlayer, config.GetSettingsValue<string>("Teleport Ship To Player"));
+			keybinds.Add(SettingKeybind.FastLoadNewExpedition, config.GetSettingsValue<string>("Fast Load New Expedition"));
 			keybinds.Add(SettingKeybind.EnterExitDreamWorld, config.GetSettingsValue<string>("Enter/Exit DreamWorld"));
 
 			keybinds.Add(SettingKeybind.ATPPracticeState, config.GetSettingsValue<string>("ATP Practice State"));
@@ -345,6 +346,11 @@ namespace CheeseTools {
 
 			if (Locator.GetPlayerBody() == null) return;
 			UpdateInvincibility();
+			UpdateSectorText();
+		}
+
+		public void OnPracticeState() {
+			inPracticeState = true;
 		}
 
 		public void OnStartVesselWarp() {
@@ -384,8 +390,7 @@ namespace CheeseTools {
 		}
 
 		public void OnEnterSector(Sector sector) {
-			bool showSector = ModHelper.Config.GetSettingsValue<bool>("Show Sectors");
-			if (showSector) {
+			if (ModHelper.Config.GetSettingsValue<bool>("Show Sectors")) {
 				AddScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
 			}
 
@@ -407,8 +412,7 @@ namespace CheeseTools {
 		}
 
 		public void OnExitSector(Sector sector) {
-			bool showSector = ModHelper.Config.GetSettingsValue<bool>("Show Sectors");
-			if (showSector) {
+			if (ModHelper.Config.GetSettingsValue<bool>("Show Sectors")) {
 				RemoveScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
 			}
 		}
@@ -474,10 +478,34 @@ namespace CheeseTools {
 			}
 		}
 
-		public static void WarpToEye(Action afterEyeWarp) {
+		public static void LoadSceneIfNotInScene(OWScene scene, Action afterSceneLoad) {
+			if (LoadManager.GetCurrentScene() != scene) {
+				if (scene == OWScene.SolarSystem) {
+					LoadSolarSystemScene(afterSceneLoad);
+				}
+				if (scene == OWScene.EyeOfTheUniverse) {
+					LoadEyeScene(afterSceneLoad);
+				}
+			} else {
+				afterSceneLoad();
+			}
+		}
+
+		public static void LoadSolarSystemScene(Action afterSceneLoad) {
+			PlayerData.ResetGame();
+			if (instance.ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save")) {
+				PlayerData.LearnLaunchCodes();
+				PlayerData.SaveLoopCount(3);
+			}
+
+			LoadManager.LoadScene(OWScene.SolarSystem);
+			CheeseTools.afterSceneLoad = afterSceneLoad;
+		}
+
+		public static void LoadEyeScene(Action afterSceneLoad) {
 			PlayerData.SaveWarpedToTheEye(TimeLoop.GetSecondsRemaining());
 			LoadManager.LoadScene(OWScene.EyeOfTheUniverse);
-			CheeseTools.afterEyeWarp = afterEyeWarp;
+			CheeseTools.afterSceneLoad = afterSceneLoad;
 		}
 
 		public static void SleepUntil(double seconds, Action onWakeUp) {
@@ -601,10 +629,12 @@ namespace CheeseTools {
 		}
 
 		private void UpdateInvincibility() {
-			bool shipInvincible = ModHelper.Config.GetSettingsValue<bool>("Ship Invincibility");
 			ShipDamageController damageController = Locator.GetShipTransform()?.GetComponent<ShipDamageController>();
-			damageController._invincible = shipInvincible;
-			if (shipInvincible) RepairShip();
+			if (damageController) {
+				bool shipInvincible = ModHelper.Config.GetSettingsValue<bool>("Ship Invincibility");
+				damageController._invincible = shipInvincible;
+				if (shipInvincible) RepairShip();
+			}
 
 			bool playerInvincible = ModHelper.Config.GetSettingsValue<bool>("Player Invincibility");
 			PlayerResources resources = Locator.GetPlayerTransform()?.GetComponent<PlayerResources>();
@@ -612,6 +642,20 @@ namespace CheeseTools {
 			if (playerInvincible) {
 				resources._currentHealth = PlayerResources._maxHealth;
 				resources.PatchAllPunctures();
+			}
+		}
+
+		private void UpdateSectorText() {
+			bool showSector = ModHelper.Config.GetSettingsValue<bool>("Show Sectors");
+			if (showSector) {
+				foreach (Sector sector in Locator.GetPlayerSectorDetector()._sectorList) {
+					AddScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
+				}
+			}
+			else {
+				foreach (Sector sector in Locator.GetPlayerSectorDetector()._sectorList) {
+					RemoveScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
+				}
 			}
 		}
 
@@ -678,6 +722,26 @@ namespace CheeseTools {
 				string predictedTime = TimeSpan.FromSeconds(CheeseTools.instrumentTimer.Elapsed.TotalSeconds + (inflationController._finishFormationTime - inflationController._startFormationTime) + bigBangTime).ToString(@"m\:ss\.ff");
 				CheeseTools.AddScreenText($"Predicted Instrument Hunt Time: [{predictedTime}]", PromptPosition.LowerLeft);
 			}
+		}
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(InputManager), nameof(InputManager.OnStartOfTimeLoop))]
+		public static bool InputManager_OnStartOfTimeLoop() {
+			if (CheeseTools.afterSceneLoad != null) {
+				OWInput.ChangeInputMode(InputMode.Character);
+				GlobalMessenger.FireEvent("TakeFirstFlashbackSnapshot");
+				return false;
+			}
+			return true;
+		}
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(ShipEjectionSystem), nameof(ShipEjectionSystem.OnPressInteract))]
+		public static bool ShipEjectionSystem_OnPressInteract() {
+			ShipDamageController damageController = Locator.GetShipTransform()?.GetComponent<ShipDamageController>();
+			if (damageController) {
+				CheeseTools.Console.WriteLine("ship invicibility set to false");
+				damageController._invincible = false;
+			}
+			return true;
 		}
 	}
 }
