@@ -10,17 +10,16 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // TODO:
-// - sleepuntil auto reload scene if timeloop above sleep time
-// - make sleepuntil campfire not move player towards campfire and make sure it works everywhere in the solarsystem
 // - ATP interior pratice state
 // - bramble practice state
+// - cloneboosting setup option for instrument hunt
 // - custom practice state settings like loop time and put on suit
+// - look into ship gravity fix if its frame or fixedupdate dependant
 // - stranger decloak
 // - https://owml.outerwildsmods.com/guides/rebinding/ uhmm apparently made the keybinds class for nothing cause this exists??
 
 // Bugs:
-// - if you start practice state while sleeping in campfire the game gets really laggy
-// - if you start non-ship practice state while seated in ship your position doesn't get set
+// - in death animation escape menu and loading scene doesnt work
 
 namespace CheeseTools {
 	public class CheeseTools : ModBehaviour {
@@ -28,18 +27,15 @@ namespace CheeseTools {
 		public static IModConsole Console => instance.ModHelper.Console;
 		public static Keybinds keybinds = new Keybinds();
 		public static Action afterSceneLoad;
+		public static bool inPracticeState = false;
+		public static Action afterSleepUntil;
+		public static double wakeUpTime = 0;
 
+		private static int fixedUpdateCount = 0;
 		private static ScreenPrompt loopTimeText = new ScreenPrompt("");
 		private static NomaiWarpTransmitter atpWarpTransmitter => GameObject.Find("Prefab_NOM_WarpTransmitter (1)")?.GetComponent<NomaiWarpTransmitter>();
 		private static NomaiWarpReceiver atpWarpReceiver => GameObject.Find("Interactibles_TimeLoopRing_Hidden/Prefab_NOM_WarpReceiver").GetComponent<NomaiWarpReceiver>();
 
-		private static int fixedUpdateCount = 0;
-		private static bool isSleeping = false;
-		private static Campfire campfire;
-		private static double wakeUpTime = 0;
-		private static Action onWakeUp;
-
-		private static bool inPracticeState = false;
 		private static ScreenTimer atpEnterTimer = new ScreenTimer("ATP Enter Time: ");
 		private static ScreenTimer atpInteriorTimer = new ScreenTimer("ATP Interior Time: ");
 		private static ScreenTimer atpExitTimer = new ScreenTimer("ATP Exit Time: ");
@@ -75,6 +71,7 @@ namespace CheeseTools {
 		public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene) {
 			//Console.WriteLine($"previousScene: {previousScene}, newScene: {newScene}");
 			fixedUpdateCount = 0;
+			afterSleepUntil = null;
 
 			if (newScene == OWScene.SolarSystem) {
 				Locator.GetPlayerSectorDetector().OnEnterSector += OnEnterSector;
@@ -104,8 +101,6 @@ namespace CheeseTools {
 
 			}
 			if (newScene == OWScene.TitleScreen) {
-				inPracticeState = false;
-
 				if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save") && (previousScene == OWScene.SolarSystem || previousScene == OWScene.EyeOfTheUniverse)) {
 					PlayerData.ResetGame();
 					PlayerData.LearnLaunchCodes();
@@ -126,7 +121,6 @@ namespace CheeseTools {
 			if (Locator.GetPlayerBody() == null) return;
 			UpdateInfiniteResources();
 			UpdateLoopTimeText();
-			UpdateSleepText();
 			UpdateStrangerMarker();
 			ScreenTimerController.Update();
 			Locator.GetPauseCommandListener().enabled = true;
@@ -138,6 +132,10 @@ namespace CheeseTools {
 			if (fixedUpdateCount == 2) {
 				if (afterSceneLoad != null) {
 					ModHelper.Events.Unity.FireOnNextUpdate(() => {
+						Locator.GetPlayerCamera().GetComponent<PlayerCameraEffectController>().OpenEyes(0f);
+						var reticle = GameObject.FindObjectOfType<ReticleController>()._image;
+						reticle.color = new Color(reticle.color.r, reticle.color.g, reticle.color.b, 1f);
+
 						afterSceneLoad();
 						afterSceneLoad = null;
 					});
@@ -196,7 +194,7 @@ namespace CheeseTools {
 				CustomPracticeState(3);
 			}
 
-			if (afterSceneLoad != null) return;
+			if (LoadManager.IsBusy()) return;
 
 			if (keybinds.Get(SettingKeybind.FastLoadNewExpedition)?.WasPressedThisFrame() == true) {
 				LoadSolarSystemScene(() => { });
@@ -209,7 +207,7 @@ namespace CheeseTools {
 					return;
 				}
 
-				LoadSceneIfNotInScene(OWScene.SolarSystem, () => {
+				LoadSolarSystemScene(() => {
 					SleepUntil(sleepTime, () => {
 						RelativeLocationData location = new RelativeLocationData(new Vector3(17.74f, -44.73f, 185.74f), Quaternion.Euler(new Vector3(294.14f, 63.13f, 124.75f)), Vector3.zero);
 						Teleportation.TeleportPlayerTo(Locator.GetAstroObject(AstroObject.Name.TimberHearth).GetOWRigidbody(), location);
@@ -222,7 +220,7 @@ namespace CheeseTools {
 							atpEnterTimer.Restart();
 						}
 					});
-				});
+				}, true);
 			}
 			else if (keybinds.Get(SettingKeybind.FeldsparringPracticeState)?.WasPressedThisFrame() == true) {
 				LoadSolarSystemScene(() => {
@@ -249,7 +247,7 @@ namespace CheeseTools {
 				});
 			}
 			else if (keybinds.Get(SettingKeybind.VesselClipPracticeState)?.WasPressedThisFrame() == true) {
-				LoadSceneIfNotInScene(OWScene.SolarSystem, () => {
+				LoadSolarSystemScene(() => {
 					Locator.GetPlayerSuit().SuitUp(false, true);
 					Teleportation.TeleportPlayerTo(GameObject.Find("DB_VesselDimension_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(175.66f, 13.39f, -19.34f), Quaternion.Euler(353.87f, 95.65f, 12.28f), Vector3.zero));
 
@@ -418,11 +416,10 @@ namespace CheeseTools {
 		}
 
 		public void OnStopSleepingAtCampfire() {
-			if (isSleeping) {
-				isSleeping = false;
-				if (onWakeUp != null && TimeLoop.GetSecondsElapsed() >= wakeUpTime) {
-					onWakeUp();
-					onWakeUp = null;
+			if (afterSleepUntil != null) {
+				if (TimeLoop.GetSecondsElapsed() >= wakeUpTime) {
+					afterSleepUntil();
+					afterSleepUntil = null;
 				}
 				OWTime.Unpause(OWTime.PauseType.Sleeping);
 			}
@@ -478,22 +475,13 @@ namespace CheeseTools {
 			}
 		}
 
-		public static void LoadSceneIfNotInScene(OWScene scene, Action afterSceneLoad) {
-			if (LoadManager.GetCurrentScene() != scene) {
-				if (scene == OWScene.SolarSystem) {
-					LoadSolarSystemScene(afterSceneLoad);
-				}
-				if (scene == OWScene.EyeOfTheUniverse) {
-					LoadEyeScene(afterSceneLoad);
-				}
-			} else {
-				afterSceneLoad();
-			}
+		public static void LoadSolarSystemScene(Action afterSceneLoad) {
+			LoadSolarSystemScene(afterSceneLoad, instance.ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save"));
 		}
 
-		public static void LoadSolarSystemScene(Action afterSceneLoad) {
+		public static void LoadSolarSystemScene(Action afterSceneLoad, bool launchCodes) {
 			PlayerData.ResetGame();
-			if (instance.ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save")) {
+			if (launchCodes) {
 				PlayerData.LearnLaunchCodes();
 				PlayerData.SaveLoopCount(3);
 			}
@@ -508,15 +496,13 @@ namespace CheeseTools {
 			CheeseTools.afterSceneLoad = afterSceneLoad;
 		}
 
-		public static void SleepUntil(double seconds, Action onWakeUp) {
-			campfire = GetClosestCampfire();
+		public static void SleepUntil(double seconds, Action afterSleepUntil) {
+			Campfire campfire = GetClosestCampfire();
 			campfire.StartSleeping();
-			campfire._fastForwardStartTime = Time.timeSinceLevelLoad;
 			campfire.StartFastForwarding();
 
 			wakeUpTime = seconds;
-			CheeseTools.onWakeUp = onWakeUp;
-			isSleeping = true;
+			CheeseTools.afterSleepUntil = afterSleepUntil;
 		}
 
 		public static Campfire GetClosestCampfire() {
@@ -672,21 +658,6 @@ namespace CheeseTools {
 			}
 		}
 
-		private void UpdateSleepText() {
-			if (isSleeping) {
-				if (TimeLoop.GetSecondsElapsed() < wakeUpTime) {
-					campfire._fastForwardMultiplier = Mathf.Clamp((float)wakeUpTime - TimeLoop.GetSecondsElapsed(), 2f, 50f);
-					GameObject.FindObjectOfType<SleepTimerUI>()._text.text = $"Sleeping until {TimeSpan.FromSeconds(wakeUpTime).ToString(@"mm\:ss")}\n" + TimeSpan.FromSeconds(TimeLoop.GetSecondsElapsed()).ToString(@"mm\:ss");
-				}
-				else {
-					if (!OWTime.IsPaused()) {
-						OWTime.Pause(OWTime.PauseType.Sleeping);
-					}
-					GameObject.FindObjectOfType<SleepTimerUI>()._text.text = $"Ready. Wake up to start\n" + TimeSpan.FromSeconds(TimeLoop.GetSecondsElapsed()).ToString(@"mm\:ss");
-				}
-			}
-		}
-
 		private void UpdateStrangerMarker() {
 			var stranger = Locator.GetAstroObject(AstroObject.Name.RingWorld)?.GetOWRigidbody();
 			if (stranger == null) return;
@@ -696,52 +667,6 @@ namespace CheeseTools {
 			if (strangerMarker.IsVisible() != visible) {
 				strangerMarker.SetVisibility(visible);
 			}
-		}
-	}
-
-	[HarmonyPatch]
-	public static class GamePatches {
-		[HarmonyPrefix]
-		[HarmonyPatch(typeof(PromptManager), nameof(PromptManager.SetPromptsVisible))]
-		public static bool PromptManager_SetPromptsVisible() {
-			return false;
-		}
-		[HarmonyPrefix]
-		[HarmonyPatch(typeof(ScreenPromptList), nameof(ScreenPromptList.OnPlayerDeath))]
-		public static bool ScreenPromptList_OnPlayerDeath(DeathType deathType) {
-			return deathType != DeathType.BigBang;
-		}
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(CosmicInflationController), nameof(CosmicInflationController.UpdateFormation))]
-		public static void CosmicInflationController_UpdateFormation() {
-			if (!CheeseTools.instrumentTimer.IsRunning || !CheeseTools.instance.ModHelper.Config.GetSettingsValue<bool>("Predict Instrument Hunt Time")) return;
-
-			var inflationController = GameObject.Find("InflationController").GetComponent<CosmicInflationController>();
-			if (inflationController._finishFormationTime >= 0f && inflationController._startFormationTime == Time.time) {
-				float bigBangTime = 37f; // scout boosting to big bang is considered but times can vary. this is just an estimation.
-				string predictedTime = TimeSpan.FromSeconds(CheeseTools.instrumentTimer.Elapsed.TotalSeconds + (inflationController._finishFormationTime - inflationController._startFormationTime) + bigBangTime).ToString(@"m\:ss\.ff");
-				CheeseTools.AddScreenText($"Predicted Instrument Hunt Time: [{predictedTime}]", PromptPosition.LowerLeft);
-			}
-		}
-		[HarmonyPrefix]
-		[HarmonyPatch(typeof(InputManager), nameof(InputManager.OnStartOfTimeLoop))]
-		public static bool InputManager_OnStartOfTimeLoop() {
-			if (CheeseTools.afterSceneLoad != null) {
-				OWInput.ChangeInputMode(InputMode.Character);
-				GlobalMessenger.FireEvent("TakeFirstFlashbackSnapshot");
-				return false;
-			}
-			return true;
-		}
-		[HarmonyPrefix]
-		[HarmonyPatch(typeof(ShipEjectionSystem), nameof(ShipEjectionSystem.OnPressInteract))]
-		public static bool ShipEjectionSystem_OnPressInteract() {
-			ShipDamageController damageController = Locator.GetShipTransform()?.GetComponent<ShipDamageController>();
-			if (damageController) {
-				CheeseTools.Console.WriteLine("ship invicibility set to false");
-				damageController._invincible = false;
-			}
-			return true;
 		}
 	}
 }
