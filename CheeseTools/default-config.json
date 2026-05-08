@@ -37,27 +37,28 @@
     "  ": { "type": "separator" },
     "ATP Practice State": "P+Digit1",
     "ATP Loop Time": "441.5",
+    "ATP Interior Practice State": "P+Digit2",
     "ATP Enter Timer": false,
     "ATP Interior Timer": false,
     "ATP Exit Timer": false,
 
     "   ": { "type": "separator" },
-    "Ultimate Feldsparring Practice State": "P+Digit2",
+    "Ultimate Feldsparring Practice State": "P+Digit3",
     "Ultimate Feldsparring Timer": false,
 
     "    ": { "type": "separator" },
-    "Vessel Practice State": "P+Digit3",
-    "Vessel Clip Practice State": "P+Digit4",
+    "Vessel Practice State": "P+Digit4",
+    "Vessel Clip Practice State": "P+Digit5",
     "Warp Timer": false,
     "Observe Timer": false,
 
     "     ": { "type": "separator" },
-    "Clone Practice State": "P+Digit5",
+    "Clone Practice State": "P+Digit6",
     "Clone Timer": false,
     "Clone Trees Locator": false,
 
     "      ": { "type": "separator" },
-    "Instrument Hunt Practice State": "P+Digit6",
+    "Instrument Hunt Practice State": "P+Digit7",
     "Instrument Hunt Timer": false,
     "Predict Instrument Hunt Time": false,
 

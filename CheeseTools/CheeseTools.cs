@@ -10,7 +10,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // TODO:
-// - ATP interior pratice state
 // - bramble practice state
 // - cloneboosting setup option for instrument hunt
 // - custom practice state settings like loop time and put on suit
@@ -222,6 +221,17 @@ namespace CheeseTools {
 					});
 				}, true);
 			}
+			else if (keybinds.Get(SettingKeybind.ATPInteriorPracticeState)?.WasPressedThisFrame() == true) {
+				LoadSolarSystemScene(() => {
+					Locator.GetPlayerSuit().SuitUp(false, true);
+					var sandSphere = GameObject.Find("SandSphere_Draining");
+					sandSphere.GetComponent<SandLevelController>().enabled = false;
+					sandSphere.transform.localScale = Vector3.zero;
+					atpWarpTransmitter._alignmentWindow = 360f;
+					Teleportation.TeleportPlayerTo(GameObject.Find("TowerTwin_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-0.17f, 2.17f, -124.05f), Quaternion.Euler(271.01f, 3.51f, 356.50f), Vector3.zero));
+					Locator.GetToolModeSwapper().EquipToolMode(ToolMode.Probe);
+				}, false);
+			}
 			else if (keybinds.Get(SettingKeybind.FeldsparringPracticeState)?.WasPressedThisFrame() == true) {
 				LoadSolarSystemScene(() => {
 					Locator.GetPlayerSuit().SuitUp(false, true);
@@ -232,7 +242,7 @@ namespace CheeseTools {
 					Teleportation.TeleportBodyTo(ship, Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody(), shipLocation);
 					ship.SetVelocity(Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody().GetVelocity() + ship.transform.forward * 1150);
 					Items.PickUpItem(Items.GetWarpCore());
-				});
+				}, false);
 			}
 			else if (keybinds.Get(SettingKeybind.VesselPracticeState)?.WasPressedThisFrame() == true) {
 				LoadSolarSystemScene(() => {
@@ -244,7 +254,7 @@ namespace CheeseTools {
 					Teleportation.TeleportBodyTo(ship, Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody(), shipLocation);
 					ship.SetVelocity(Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody().GetVelocity() + ship.transform.forward * 50);
 					Items.PickUpItem(Items.GetWarpCore());
-				});
+				}, false);
 			}
 			else if (keybinds.Get(SettingKeybind.VesselClipPracticeState)?.WasPressedThisFrame() == true) {
 				LoadSolarSystemScene(() => {
@@ -297,7 +307,7 @@ namespace CheeseTools {
 					// if you warp before bundles are loaded the game gets stuck infinitely loading.
 					// so I just forcefully clear it. no clue if this breaks anything
 					StreamingManager.s_activeBundles.Clear();
-				});
+				}, true);
 			}
 			else if (keybinds.Get(SettingKeybind.ClonePracticeState)?.WasPressedThisFrame() == true) {
 				LoadEyeScene(() => {
@@ -332,6 +342,7 @@ namespace CheeseTools {
 			keybinds.Add(SettingKeybind.EnterExitDreamWorld, config.GetSettingsValue<string>("Enter/Exit DreamWorld"));
 
 			keybinds.Add(SettingKeybind.ATPPracticeState, config.GetSettingsValue<string>("ATP Practice State"));
+			keybinds.Add(SettingKeybind.ATPInteriorPracticeState, config.GetSettingsValue<string>("ATP Interior Practice State"));
 			keybinds.Add(SettingKeybind.FeldsparringPracticeState, config.GetSettingsValue<string>("Ultimate Feldsparring Practice State"));
 			keybinds.Add(SettingKeybind.VesselPracticeState, config.GetSettingsValue<string>("Vessel Practice State"));
 			keybinds.Add(SettingKeybind.VesselClipPracticeState, config.GetSettingsValue<string>("Vessel Clip Practice State"));
@@ -426,7 +437,7 @@ namespace CheeseTools {
 		}
 
 		public void OnReceiveWarpedBodyATPTransmitter(OWRigidbody body, NomaiWarpPlatform startPlatform, NomaiWarpPlatform receivedPlatform) {
-			if (body is PlayerBody && Items.GetItemTool().GetHeldItemType() == ItemType.WarpCore) {
+			if (body is PlayerBody) {
 				atpInteriorTimer.Stop();
 				atpExitTimer.Stop();
 			}
@@ -434,6 +445,9 @@ namespace CheeseTools {
 
 		public void OnReceiveWarpedBodyATPReceiver(OWRigidbody body, NomaiWarpPlatform startPlatform, NomaiWarpPlatform receivedPlatform) {
 			if (body is PlayerBody) {
+				if (atpWarpTransmitter._alignmentWindow == 360f)
+					atpWarpTransmitter._alignmentWindow = 0f;
+
 				atpEnterTimer.Stop();
 				if (IsTimerEnabled("ATP Interior Timer")) {
 					atpInteriorTimer.Restart();

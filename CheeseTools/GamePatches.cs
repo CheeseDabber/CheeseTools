@@ -17,9 +17,10 @@ namespace CheeseTools {
 		}
 		[HarmonyPrefix]
 		[HarmonyPatch(typeof(InputManager), nameof(InputManager.OnStartOfTimeLoop))]
-		public static bool InputManager_OnStartOfTimeLoop() {
+		public static bool InputManager_OnStartOfTimeLoop(InputManager __instance) {
 			if (CheeseTools.afterSceneLoad != null) {
-				OWInput.ChangeInputMode(InputMode.Character);
+				__instance.ChangeInputMode(InputMode.Character);
+				__instance._inputFadeFraction = 1f;
 				GlobalMessenger.FireEvent("TakeFirstFlashbackSnapshot");
 				return false;
 			}

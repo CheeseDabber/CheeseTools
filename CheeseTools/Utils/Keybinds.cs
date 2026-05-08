@@ -14,6 +14,7 @@ namespace CheeseTools.Utils {
 		FastLoadNewExpedition,
 		EnterExitDreamWorld,
 		ATPPracticeState,
+		ATPInteriorPracticeState,
 		FeldsparringPracticeState,
 		VesselPracticeState,
 		VesselClipPracticeState,
