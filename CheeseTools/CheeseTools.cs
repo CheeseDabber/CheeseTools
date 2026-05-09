@@ -10,15 +10,17 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // TODO:
-// - bramble practice state
+// - add editable speed setting for feldsparring practice state
 // - cloneboosting setup option for instrument hunt
-// - custom practice state settings like loop time and put on suit
-// - look into ship gravity fix if its frame or fixedupdate dependant
+// - custom practice state settings like loop time and put on suit and ship
 // - stranger decloak
+// - fix practice state timers
 // - https://owml.outerwildsmods.com/guides/rebinding/ uhmm apparently made the keybinds class for nothing cause this exists??
+// - make sure mod works without echoes of the eye
 
 // Bugs:
 // - in death animation escape menu and loading scene doesnt work
+// - loop time dissapears if you grab warpcore
 
 namespace CheeseTools {
 	public class CheeseTools : ModBehaviour {
@@ -30,7 +32,6 @@ namespace CheeseTools {
 		public static Action afterSleepUntil;
 		public static double wakeUpTime = 0;
 
-		private static int fixedUpdateCount = 0;
 		private static ScreenPrompt loopTimeText = new ScreenPrompt("");
 		private static NomaiWarpTransmitter atpWarpTransmitter => GameObject.Find("Prefab_NOM_WarpTransmitter (1)")?.GetComponent<NomaiWarpTransmitter>();
 		private static NomaiWarpReceiver atpWarpReceiver => GameObject.Find("Interactibles_TimeLoopRing_Hidden/Prefab_NOM_WarpReceiver").GetComponent<NomaiWarpReceiver>();
@@ -69,7 +70,6 @@ namespace CheeseTools {
 
 		public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene) {
 			//Console.WriteLine($"previousScene: {previousScene}, newScene: {newScene}");
-			fixedUpdateCount = 0;
 			afterSleepUntil = null;
 
 			if (newScene == OWScene.SolarSystem) {
@@ -93,7 +93,7 @@ namespace CheeseTools {
 			}
 			if (newScene == OWScene.EyeOfTheUniverse) {
 				if (IsTimerEnabled("Observe Timer")) {
-					observeTimer.Restart();
+					observeTimer.Start();
 				}
 			}
 			else {
@@ -111,7 +111,18 @@ namespace CheeseTools {
 			}
 
 			if (Locator.GetPlayerBody() == null) return;
+
 			UpdateInvincibility();
+			if (afterSceneLoad != null) {
+				FixedUpdateDispatcher.FireAfterFixedUpdate(() => {
+					Locator.GetPlayerCamera().GetComponent<PlayerCameraEffectController>().OpenEyes(0f);
+					var reticle = GameObject.FindObjectOfType<ReticleController>()._image;
+					reticle.color = new Color(reticle.color.r, reticle.color.g, reticle.color.b, 1f);
+
+					afterSceneLoad();
+					afterSceneLoad = null;
+				});
+			}
 		}
 
 		public void Update() {
@@ -126,20 +137,7 @@ namespace CheeseTools {
 		}
 
 		public void FixedUpdate() {
-			fixedUpdateCount++;
-
-			if (fixedUpdateCount == 2) {
-				if (afterSceneLoad != null) {
-					ModHelper.Events.Unity.FireOnNextUpdate(() => {
-						Locator.GetPlayerCamera().GetComponent<PlayerCameraEffectController>().OpenEyes(0f);
-						var reticle = GameObject.FindObjectOfType<ReticleController>()._image;
-						reticle.color = new Color(reticle.color.r, reticle.color.g, reticle.color.b, 1f);
-
-						afterSceneLoad();
-						afterSceneLoad = null;
-					});
-				}
-			}
+			FixedUpdateDispatcher.FixedUpdate();
 		}
 
 		private void CheckInput() {
@@ -192,6 +190,11 @@ namespace CheeseTools {
 			else if (keybinds.Get(SettingKeybind.CustomPracticeState3)?.WasPressedThisFrame() == true) {
 				CustomPracticeState(3);
 			}
+			// dev keybind for testing
+			//else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
+			//	var relativeBody = GameObject.Find("TimeLoopRing_Body").GetAttachedOWRigidbody();
+			//	RelativeBody.PrintRelativeLocation("Player Location:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
+			//}
 
 			if (LoadManager.IsBusy()) return;
 
@@ -213,10 +216,10 @@ namespace CheeseTools {
 						Locator.GetPlayerSuit().SuitUp(false, true);
 
 						if (IsTimerEnabled("ATP Exit Timer")) {
-							atpExitTimer.Restart();
+							atpExitTimer.Start();
 						}
 						if (IsTimerEnabled("ATP Enter Timer")) {
-							atpEnterTimer.Restart();
+							atpEnterTimer.Start();
 						}
 					});
 				}, true);
@@ -231,6 +234,32 @@ namespace CheeseTools {
 					Teleportation.TeleportPlayerTo(GameObject.Find("TowerTwin_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-0.17f, 2.17f, -124.05f), Quaternion.Euler(271.01f, 3.51f, 356.50f), Vector3.zero));
 					Locator.GetToolModeSwapper().EquipToolMode(ToolMode.Probe);
 				}, false);
+			}
+			else if (keybinds.Get(SettingKeybind.BramblePracticeState)?.WasPressedThisFrame() == true) {
+				LoadSolarSystemScene(() => {
+					SleepUntil(490, () => {
+						Locator.GetPlayerSuit().SuitUp(false, true);
+						Items.PickUpItem(Items.GetWarpCore());
+						Locator.GetToolModeSwapper().EquipToolMode(ToolMode.Probe);
+
+						var sandSphere = GameObject.Find("SandSphere_Draining");
+						sandSphere.GetComponent<SandLevelController>().enabled = false;
+						sandSphere.transform.localScale = Vector3.zero;
+
+						var timeLoopRingController = GameObject.FindObjectOfType<TimeLoopRingController>();
+						timeLoopRingController._ringBody.SetAngularVelocity(Vector3.zero);
+						timeLoopRingController.SetRunning(false);
+						var receiver = atpWarpReceiver;
+						receiver._returnPlatform = atpWarpTransmitter;
+						receiver._returnOnEntry = true;
+						receiver._returnGlowFadeController.SetFade(1f);
+
+						Teleportation.TeleportBodyTo(Locator.GetShipBody(), GameObject.Find("TowerTwin_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-3.68f, 1.20f, -128.05f), Quaternion.Euler(326.12f, 117.71f, 254.52f), Vector3.zero));
+						Teleportation.TeleportPlayerTo(GameObject.Find("TimeLoopRing_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(0.0f, 10.0f, 0.0f), Quaternion.Euler(272.28f, 84.02f, 5.81f), Vector3.zero));
+						var playerBody = Locator.GetPlayerBody();
+						playerBody.SetVelocity(GameObject.Find("TimeLoopRing_Body").GetAttachedOWRigidbody().GetVelocity() + playerBody.transform.forward * 5);
+					});
+				}, true);
 			}
 			else if (keybinds.Get(SettingKeybind.FeldsparringPracticeState)?.WasPressedThisFrame() == true) {
 				LoadSolarSystemScene(() => {
@@ -343,6 +372,7 @@ namespace CheeseTools {
 
 			keybinds.Add(SettingKeybind.ATPPracticeState, config.GetSettingsValue<string>("ATP Practice State"));
 			keybinds.Add(SettingKeybind.ATPInteriorPracticeState, config.GetSettingsValue<string>("ATP Interior Practice State"));
+			keybinds.Add(SettingKeybind.BramblePracticeState, config.GetSettingsValue<string>("Bramble Practice State"));
 			keybinds.Add(SettingKeybind.FeldsparringPracticeState, config.GetSettingsValue<string>("Ultimate Feldsparring Practice State"));
 			keybinds.Add(SettingKeybind.VesselPracticeState, config.GetSettingsValue<string>("Vessel Practice State"));
 			keybinds.Add(SettingKeybind.VesselClipPracticeState, config.GetSettingsValue<string>("Vessel Clip Practice State"));
@@ -370,7 +400,7 @@ namespace CheeseTools {
 			//Console.WriteLine($"EyeState changed: {state}");
 			if (state == EyeState.InstrumentHunt) {
 				if (IsTimerEnabled("Instrument Hunt Timer")) {
-					instrumentTimer.Restart();
+					instrumentTimer.Start();
 				}
 				if (cloneTimer.IsRunning == true) {
 					if (ModHelper.Config.GetSettingsValue<bool>("Clone Trees Locator")) {
@@ -383,7 +413,7 @@ namespace CheeseTools {
 				observeTimer.Stop();
 
 				if (IsTimerEnabled("Clone Timer")) {
-					cloneTimer.Restart();
+					cloneTimer.Start();
 					if (ModHelper.Config.GetSettingsValue<bool>("Clone Trees Locator")) {
 						CanvasMarker marker = GetOrCreateMarker("Trees Location", GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new Vector3(-54.48f, 1.00f, 5999.10f));
 						marker.SetVisibility(true);
@@ -407,7 +437,7 @@ namespace CheeseTools {
 			bool isWarpTimer = IsTimerEnabled("Warp Timer");
 			if (sector.name == "Sector_AnglerNestDimension") {
 				if (isFeldsparringTimer) {
-					feldsparringTimer.Restart();
+					feldsparringTimer.Start();
 				}
 			}
 			else if (sector.name == "Sector_VesselDimension") {
@@ -415,7 +445,7 @@ namespace CheeseTools {
 					feldsparringTimer.Stop();
 				}
 				if (isWarpTimer) {
-					warpTimer.Restart();
+					warpTimer.Start();
 				}
 			}
 		}
@@ -450,7 +480,7 @@ namespace CheeseTools {
 
 				atpEnterTimer.Stop();
 				if (IsTimerEnabled("ATP Interior Timer")) {
-					atpInteriorTimer.Restart();
+					atpInteriorTimer.Start();
 				}
 			}
 		}

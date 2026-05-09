@@ -18,16 +18,12 @@ namespace CheeseTools.Utils {
 		public void SetText(string text) => _screenPrompt.SetText(text);
 		public string GetText() => _screenPrompt.GetText();
 
-		public new void Restart() {
-			base.Reset();
-			this.Start();
-		}
-
 		public new void Start() {
 			if (!Locator.GetPromptManager().GetScreenPromptList(PromptPosition.LowerLeft).Contains(_screenPrompt)) {
 				Locator.GetPromptManager().AddScreenPrompt(_screenPrompt, PromptPosition.LowerLeft, true);
 			}
 			ScreenTimerController.Register(this);
+			Reset();
 			base.Start();
 		}
 

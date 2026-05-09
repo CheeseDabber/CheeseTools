@@ -15,6 +15,7 @@ namespace CheeseTools.Utils {
 		EnterExitDreamWorld,
 		ATPPracticeState,
 		ATPInteriorPracticeState,
+		BramblePracticeState,
 		FeldsparringPracticeState,
 		VesselPracticeState,
 		VesselClipPracticeState,

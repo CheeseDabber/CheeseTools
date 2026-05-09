@@ -43,22 +43,24 @@
     "ATP Exit Timer": false,
 
     "   ": { "type": "separator" },
-    "Ultimate Feldsparring Practice State": "P+Digit3",
+    "Bramble Practice State": "P+Digit3",
+    "Ultimate Feldsparring Practice State": "P+Digit4",
+    "Bramble Timer": false,
     "Ultimate Feldsparring Timer": false,
 
     "    ": { "type": "separator" },
-    "Vessel Practice State": "P+Digit4",
-    "Vessel Clip Practice State": "P+Digit5",
+    "Vessel Practice State": "P+Digit5",
+    "Vessel Clip Practice State": "P+Digit6",
     "Warp Timer": false,
     "Observe Timer": false,
 
     "     ": { "type": "separator" },
-    "Clone Practice State": "P+Digit6",
+    "Clone Practice State": "P+Digit7",
     "Clone Timer": false,
     "Clone Trees Locator": false,
 
     "      ": { "type": "separator" },
-    "Instrument Hunt Practice State": "P+Digit7",
+    "Instrument Hunt Practice State": "P+Digit8",
     "Instrument Hunt Timer": false,
     "Predict Instrument Hunt Time": false,
 

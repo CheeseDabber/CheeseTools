@@ -34,9 +34,9 @@ namespace CheeseTools.Utils {
 			ShipCockpitController cockpitController = GameObject.FindObjectOfType<ShipCockpitController>();
 			cockpitController.ExitFlightConsole();
 			cockpitController.CompleteExitFlightConsole();
-			CheeseTools.instance.ModHelper.Events.Unity.FireInNUpdates(() => {
+			FixedUpdateDispatcher.FireAfterFixedUpdate(() => {
 				cockpitController.OnPressInteract();
-			}, 2);
+			});
 		}
 
 		public static void TeleportPlayerTo(OWRigidbody relativeBody, RelativeLocationData relativeLocation) {
