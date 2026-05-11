@@ -11,13 +11,9 @@ using UnityEngine.InputSystem.Controls;
 
 // TODO:
 // - custom practice state settings like loop time and put on suit and ship
-// - add bramble timer and fix all the timers
 // - https://owml.outerwildsmods.com/guides/rebinding/ uhmm apparently made the keybinds class for nothing cause this exists??
 // - make sure mod works without echoes of the eye
 // - practice states from title screen
-
-// Bugs:
-// - in death animation escape menu and loading scene doesnt work
 
 namespace CheeseTools {
 	public class CheeseTools : ModBehaviour {
@@ -30,12 +26,14 @@ namespace CheeseTools {
 		public static double wakeUpTime = 0;
 
 		private static ScreenPrompt loopTimeText = new ScreenPrompt("");
+		private static EyeState afterSceneLoadEyeState;
 		private static NomaiWarpTransmitter atpWarpTransmitter => GameObject.Find("Prefab_NOM_WarpTransmitter (1)")?.GetComponent<NomaiWarpTransmitter>();
 		private static NomaiWarpReceiver atpWarpReceiver => GameObject.Find("Interactibles_TimeLoopRing_Hidden/Prefab_NOM_WarpReceiver").GetComponent<NomaiWarpReceiver>();
 
 		private static ScreenTimer atpEnterTimer = new ScreenTimer("ATP Enter Time: ");
 		private static ScreenTimer atpInteriorTimer = new ScreenTimer("ATP Interior Time: ");
 		private static ScreenTimer atpExitTimer = new ScreenTimer("ATP Exit Time: ");
+		private static ScreenTimer brambleTimer = new ScreenTimer("Bramble Timer: ");
 		private static ScreenTimer feldsparringTimer = new ScreenTimer("Feldsparring Time: ");
 		private static ScreenTimer warpTimer = new ScreenTimer("Warp Time: ");
 		private static ScreenTimer observeTimer = new ScreenTimer("Observe Time: ");
@@ -54,6 +52,9 @@ namespace CheeseTools {
 
 			OnCompleteSceneLoad(OWScene.TitleScreen, OWScene.TitleScreen);
 			LoadManager.OnCompleteSceneLoad += (OWScene previousScene, OWScene newScene) => {
+				if (afterSceneLoad != null && newScene == OWScene.EyeOfTheUniverse) {
+					Locator.GetEyeStateManager()._initialState = afterSceneLoadEyeState;
+				}
 				ModHelper.Events.Unity.FireOnNextUpdate(() => { OnCompleteSceneLoad(previousScene, newScene); });
 			};
 
@@ -89,7 +90,7 @@ namespace CheeseTools {
 
 			}
 			if (newScene == OWScene.EyeOfTheUniverse) {
-				if (IsTimerEnabled("Observe Timer")) {
+				if (IsTimerEnabled("Observe Timer") && Locator.GetEyeStateManager().GetState() == EyeState.AboardVessel) {
 					observeTimer.Start();
 				}
 			}
@@ -330,15 +331,15 @@ namespace CheeseTools {
 				}, true);
 			}
 			else if (keybinds.Get(SettingKeybind.ClonePracticeState)?.WasPressedThisFrame() == true) {
-				LoadEyeScene(() => {
-					OWRigidbody eyeBody = GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody();
+				LoadEyeScene(EyeState.AboardVessel, () => {
 					Locator.GetPlayerSuit().SuitUp(false, true);
+					OWRigidbody eyeBody = GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody();
 					Teleportation.TeleportPlayerTo(eyeBody, new RelativeLocationData(new Vector3(-80.616f, -3905.84f, 180.686f), Quaternion.identity, Vector3.zero));
 				});
 			}
 			else if (keybinds.Get(SettingKeybind.InstrumentPracticeState)?.WasPressedThisFrame() == true) {
-				LoadEyeScene(() => {
-					Locator.GetEyeStateManager().SetState(EyeState.ForestIsDark);
+				LoadEyeScene(EyeState.ForestIsDark, () => {
+					Locator.GetPlayerSuit().SuitUp(false, true);
 					Locator.GetFlashlight().TurnOn();
 					Locator.GetToolModeSwapper().GetSignalScope()._targetFOV = 60f;
 					NotificationManager.SharedInstance.ClearAllNotifications();
@@ -353,7 +354,7 @@ namespace CheeseTools {
 							var probeLauncher = GameObject.FindObjectOfType<ProbeLauncher>();
 							probeLauncher._activeProbe = probe;
 							probeLauncher._allowRetrieval = false;
-							probeLauncher._preLaunchProbeProxy.SetActive(true);
+							probeLauncher._preLaunchProbeProxy.SetActive(false);
 							probe.Launch(probeLauncher._launcherTransform, Vector3.zero);
 							Teleportation.TeleportBodyTo(probe.GetOWRigidbody(), GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-65f, 1f, 5999f), Quaternion.Euler(90f, 0f, 0f), Vector3.zero));
 						});
@@ -412,9 +413,7 @@ namespace CheeseTools {
 				if (IsTimerEnabled("Instrument Hunt Timer")) {
 					instrumentTimer.Start();
 				}
-				if (cloneTimer.IsRunning == true) {
-					cloneTimer.Stop();
-				}
+				cloneTimer.Stop();
 				RemoveMarker("Trees Location");
 			}
 			if (state == EyeState.ZoomOut) {
@@ -439,19 +438,15 @@ namespace CheeseTools {
 			if (ModHelper.Config.GetSettingsValue<bool>("Show Sectors")) {
 				AddScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
 			}
-
-			bool isFeldsparringTimer = IsTimerEnabled("Ultimate Feldsparring Timer");
-			bool isWarpTimer = IsTimerEnabled("Warp Timer");
 			if (sector.name == "Sector_AnglerNestDimension") {
-				if (isFeldsparringTimer) {
+				if (IsTimerEnabled("Ultimate Feldsparring Timer")) {
 					feldsparringTimer.Start();
 				}
 			}
 			else if (sector.name == "Sector_VesselDimension") {
-				if (feldsparringTimer.IsRunning == true) {
-					feldsparringTimer.Stop();
-				}
-				if (isWarpTimer) {
+				feldsparringTimer.Stop();
+				brambleTimer.Stop();
+				if (IsTimerEnabled("Warp Timer")) {
 					warpTimer.Start();
 				}
 			}
@@ -477,6 +472,10 @@ namespace CheeseTools {
 			if (body is PlayerBody) {
 				atpInteriorTimer.Stop();
 				atpExitTimer.Stop();
+
+				if (IsTimerEnabled("Bramble Timer")) {
+					brambleTimer.Start();
+				}
 			}
 		}
 
@@ -541,10 +540,11 @@ namespace CheeseTools {
 			CheeseTools.afterSceneLoad = afterSceneLoad;
 		}
 
-		public static void LoadEyeScene(Action afterSceneLoad) {
+		public static void LoadEyeScene(EyeState eyeState, Action afterSceneLoad) {
 			PlayerData.SaveWarpedToTheEye(TimeLoop.GetSecondsRemaining());
 			LoadManager.LoadScene(OWScene.EyeOfTheUniverse);
 			CheeseTools.afterSceneLoad = afterSceneLoad;
+			afterSceneLoadEyeState = eyeState;
 		}
 
 		public static void SleepUntil(double seconds, Action afterSleepUntil) {
@@ -570,7 +570,7 @@ namespace CheeseTools {
 		}
 
 		public static void ToggleSpeedUp() {
-			Time.timeScale = Time.timeScale == 1f ? 50f : 1f;
+			OWTime.SetTimeScale(OWTime.GetTimeScale() == 1f ? 50f : 1f);
 		}
 
 		public static ScreenPrompt GetScreenPrompt(string text, PromptPosition position) {

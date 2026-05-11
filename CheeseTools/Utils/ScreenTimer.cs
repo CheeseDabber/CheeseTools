@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using UnityEngine;
 
 namespace CheeseTools.Utils {
-	public class ScreenTimer : Stopwatch {
-		private ScreenPrompt _screenPrompt = new ScreenPrompt("");
+	public class ScreenTimer {
 		public string prefix = "";
+		public bool isRunning { get; private set; }
+
+		private float _elapsed = 0f;
+		private ScreenPrompt _screenPrompt = new ScreenPrompt("");
 
 		public ScreenTimer(string prefix) {
 			this.prefix = prefix;
@@ -18,18 +21,32 @@ namespace CheeseTools.Utils {
 		public void SetText(string text) => _screenPrompt.SetText(text);
 		public string GetText() => _screenPrompt.GetText();
 
-		public new void Start() {
+		public void Update() {
+			if (!isRunning || OWTime.IsPaused()) return;
+			_elapsed += Time.deltaTime;
+
+			TimeSpan time = TimeSpan.FromSeconds(_elapsed);
+			string formattedTime = time.Minutes >= 1 ? time.ToString(@"m\:ss\.ff") : time.ToString(@"ss\.ff");
+			_screenPrompt.SetText($"{prefix}[{formattedTime}]");
+		}
+
+		public void Start() {
+			_elapsed = 0f;
+			isRunning = true;
+
 			if (!Locator.GetPromptManager().GetScreenPromptList(PromptPosition.LowerLeft).Contains(_screenPrompt)) {
 				Locator.GetPromptManager().AddScreenPrompt(_screenPrompt, PromptPosition.LowerLeft, true);
 			}
 			ScreenTimerController.Register(this);
-			Reset();
-			base.Start();
 		}
 
-		public new void Stop() {
+		public void Stop() {
+			isRunning = false;
 			ScreenTimerController.Unregister(this);
-			base.Stop();
+		}
+
+		public float GetElapsed() {
+			return _elapsed;
 		}
 
 		public void SetVisibility(bool isVisible) {
@@ -42,7 +59,7 @@ namespace CheeseTools.Utils {
 	}
 
 	public static class ScreenTimerController {
-		private static HashSet<ScreenTimer> _screenTimers = new HashSet<ScreenTimer>();
+		private static List<ScreenTimer> _screenTimers = new List<ScreenTimer>();
 
 		public static void Start() {
 			LoadManager.OnCompleteSceneLoad += OnCompleteSceneLoad;
@@ -50,17 +67,13 @@ namespace CheeseTools.Utils {
 
 		public static void Update() {
 			foreach (ScreenTimer screenTimer in _screenTimers) {
-				if (screenTimer.IsRunning) {
-					TimeSpan time = TimeSpan.FromSeconds(screenTimer.Elapsed.TotalSeconds);
-					string formattedTime = time.Minutes >= 1 ? time.ToString(@"m\:ss\.ff") : time.ToString(@"ss\.ff");
-					screenTimer.SetText($"{screenTimer.prefix}[{formattedTime}]");
-				}
+				screenTimer.Update();
 			}
 		}
 
 		public static void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene) {
-			foreach (Stopwatch stopwatch in _screenTimers) {
-				stopwatch.Stop();
+			for (int i = _screenTimers.Count - 1; i >= 0; i--) {
+				_screenTimers[i].Stop();
 			}
 			_screenTimers.Clear();
 		}
