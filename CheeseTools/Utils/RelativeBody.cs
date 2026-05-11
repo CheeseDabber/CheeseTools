@@ -1,6 +1,4 @@
-﻿using OWML;
-using OWML.Common;
-using System;
+﻿using OWML.Common;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;

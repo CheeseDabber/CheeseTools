@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CheeseTools {
 	[HarmonyPatch]
-	public static class GamePatches {
+	public static class Patches {
 		[HarmonyPrefix]
 		[HarmonyPatch(typeof(PromptManager), nameof(PromptManager.SetPromptsVisible))]
 		public static bool PromptManager_SetPromptsVisible() {

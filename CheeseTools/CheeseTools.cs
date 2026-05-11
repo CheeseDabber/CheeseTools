@@ -10,17 +10,14 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // TODO:
-// - add editable speed setting for feldsparring practice state
-// - cloneboosting setup option for instrument hunt
 // - custom practice state settings like loop time and put on suit and ship
-// - stranger decloak
-// - fix practice state timers
+// - add bramble timer and fix all the timers
 // - https://owml.outerwildsmods.com/guides/rebinding/ uhmm apparently made the keybinds class for nothing cause this exists??
 // - make sure mod works without echoes of the eye
+// - practice states from title screen
 
 // Bugs:
 // - in death animation escape menu and loading scene doesnt work
-// - loop time dissapears if you grab warpcore
 
 namespace CheeseTools {
 	public class CheeseTools : ModBehaviour {
@@ -114,14 +111,14 @@ namespace CheeseTools {
 
 			UpdateInvincibility();
 			if (afterSceneLoad != null) {
-				FixedUpdateDispatcher.FireAfterFixedUpdate(() => {
+				FixedUpdateDispatcher.FireAfterNFixedUpdates(() => {
 					Locator.GetPlayerCamera().GetComponent<PlayerCameraEffectController>().OpenEyes(0f);
 					var reticle = GameObject.FindObjectOfType<ReticleController>()._image;
 					reticle.color = new Color(reticle.color.r, reticle.color.g, reticle.color.b, 1f);
 
 					afterSceneLoad();
 					afterSceneLoad = null;
-				});
+				}, 2);
 			}
 		}
 
@@ -192,8 +189,8 @@ namespace CheeseTools {
 			}
 			// dev keybind for testing
 			//else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
-			//	var relativeBody = GameObject.Find("TimeLoopRing_Body").GetAttachedOWRigidbody();
-			//	RelativeBody.PrintRelativeLocation("Player Location:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
+				//OWRigidbody relativeBody = RelativeBody.GetCurrent();
+				//RelativeBody.PrintRelativeLocation("Probe Position:\n", relativeBody, new RelativeLocationData(Locator.GetProbe().GetAttachedOWRigidbody(), relativeBody));
 			//}
 
 			if (LoadManager.IsBusy()) return;
@@ -203,14 +200,8 @@ namespace CheeseTools {
 			}
 			//Practice States
 			else if (keybinds.Get(SettingKeybind.ATPPracticeState)?.WasPressedThisFrame() == true) {
-				string timeStr = ModHelper.Config.GetSettingsValue<string>("ATP Loop Time");
-				if (!Double.TryParse(timeStr, out Double sleepTime)) {
-					Console.WriteLine($"Invalid ATP Loop Time: \"{timeStr}\" is not recognized", MessageType.Warning);
-					return;
-				}
-
 				LoadSolarSystemScene(() => {
-					SleepUntil(sleepTime, () => {
+					SleepUntil(ModHelper.Config.GetSettingsValue<double>("ATP Loop Time"), () => {
 						RelativeLocationData location = new RelativeLocationData(new Vector3(17.74f, -44.73f, 185.74f), Quaternion.Euler(new Vector3(294.14f, 63.13f, 124.75f)), Vector3.zero);
 						Teleportation.TeleportPlayerTo(Locator.GetAstroObject(AstroObject.Name.TimberHearth).GetOWRigidbody(), location);
 						Locator.GetPlayerSuit().SuitUp(false, true);
@@ -269,7 +260,7 @@ namespace CheeseTools {
 					RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(508.07f, 84.54f, -3248.96f), Quaternion.Euler(new Vector3(0.94f, 350.39f, 265.78f)), Vector3.zero);
 					Teleportation.TeleportPlayerToShip();
 					Teleportation.TeleportBodyTo(ship, Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody(), shipLocation);
-					ship.SetVelocity(Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody().GetVelocity() + ship.transform.forward * 1150);
+					ship.SetVelocity(Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody().GetVelocity() + ship.transform.forward * ModHelper.Config.GetSettingsValue<int>("Ultimate Feldsparring Ship Speed"));
 					Items.PickUpItem(Items.GetWarpCore());
 				}, false);
 			}
@@ -348,10 +339,29 @@ namespace CheeseTools {
 			else if (keybinds.Get(SettingKeybind.InstrumentPracticeState)?.WasPressedThisFrame() == true) {
 				LoadEyeScene(() => {
 					Locator.GetEyeStateManager().SetState(EyeState.ForestIsDark);
-					Teleportation.TeleportPlayerTo(GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-54.48f, 1.00f, 5999.10f), Quaternion.Euler(0.00f, 94.03f, 0.00f), Vector3.zero));
 					Locator.GetFlashlight().TurnOn();
-					Locator.GetToolModeSwapper().EquipToolMode(ToolMode.SignalScope);
 					Locator.GetToolModeSwapper().GetSignalScope()._targetFOV = 60f;
+					NotificationManager.SharedInstance.ClearAllNotifications();
+
+					Quaternion playerOrientation;
+					if (ModHelper.Config.GetSettingsValue<bool>("Cloneboosting Setup")) {
+						playerOrientation = Quaternion.Euler(0f, 268f, 0f);
+						Locator.GetToolModeSwapper().EquipToolMode(ToolMode.Probe);
+
+						ModHelper.Events.Unity.FireOnNextUpdate(() => {
+							var probe = Locator.GetProbe();
+							var probeLauncher = GameObject.FindObjectOfType<ProbeLauncher>();
+							probeLauncher._activeProbe = probe;
+							probeLauncher._allowRetrieval = false;
+							probeLauncher._preLaunchProbeProxy.SetActive(true);
+							probe.Launch(probeLauncher._launcherTransform, Vector3.zero);
+							Teleportation.TeleportBodyTo(probe.GetOWRigidbody(), GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-65f, 1f, 5999f), Quaternion.Euler(90f, 0f, 0f), Vector3.zero));
+						});
+					} else {
+						playerOrientation = Quaternion.Euler(0f, 95f, 0f);
+						Locator.GetToolModeSwapper().EquipToolMode(ToolMode.SignalScope);
+					}
+					Teleportation.TeleportPlayerTo(GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-54.48f, 1f, 5999.10f), playerOrientation, Vector3.zero));
 				});
 			}
 		}
@@ -403,21 +413,18 @@ namespace CheeseTools {
 					instrumentTimer.Start();
 				}
 				if (cloneTimer.IsRunning == true) {
-					if (ModHelper.Config.GetSettingsValue<bool>("Clone Trees Locator")) {
-						RemoveMarker("Trees Location");
-					}
 					cloneTimer.Stop();
 				}
+				RemoveMarker("Trees Location");
 			}
 			if (state == EyeState.ZoomOut) {
 				observeTimer.Stop();
-
 				if (IsTimerEnabled("Clone Timer")) {
 					cloneTimer.Start();
-					if (ModHelper.Config.GetSettingsValue<bool>("Clone Trees Locator")) {
-						CanvasMarker marker = GetOrCreateMarker("Trees Location", GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new Vector3(-54.48f, 1.00f, 5999.10f));
-						marker.SetVisibility(true);
-					}
+				}
+				if (inPracticeState && ModHelper.Config.GetSettingsValue<bool>("Clone Trees Locator")) {
+					CanvasMarker marker = GetOrCreateMarker("Trees Location", GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new Vector3(-54.48f, 1.00f, 5999.10f));
+					marker.SetVisibility(true);
 				}
 			}
 		}
@@ -690,8 +697,7 @@ namespace CheeseTools {
 		}
 
 		private void UpdateLoopTimeText() {
-			bool showLoopTime = ModHelper.Config.GetSettingsValue<bool>("Show Loop Time");
-			if (showLoopTime && TimeLoop.IsTimeLoopEnabled() && TimeLoop.IsTimeFlowing()) {
+			if (ModHelper.Config.GetSettingsValue<bool>("Show Loop Time") && TimeLoop.GetSecondsElapsed() > 0f) {
 				loopTimeText.SetText($"Loop Time: {TimeSpan.FromSeconds(TimeLoop.GetSecondsElapsed()).ToString(@"mm\:ss")} [{(int)TimeLoop.GetSecondsElapsed()}]");
 				if (!Locator.GetPromptManager().GetScreenPromptList(PromptPosition.LowerLeft).Contains(loopTimeText)) {
 					Locator.GetPromptManager().AddScreenPrompt(loopTimeText, PromptPosition.LowerLeft, true);
