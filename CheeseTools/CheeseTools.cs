@@ -10,9 +10,10 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // TODO:
+// - practice states from title screen
 // - https://owml.outerwildsmods.com/guides/rebinding/ uhmm apparently made the keybinds class for nothing cause this exists??
 // - make sure mod works without echoes of the eye
-// - practice states from title screen
+// - add watermark
 
 namespace CheeseTools {
 	public class CheeseTools : ModBehaviour {
@@ -97,6 +98,7 @@ namespace CheeseTools {
 
 			}
 			if (newScene == OWScene.TitleScreen) {
+				inPracticeState = false;
 				if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save") && (previousScene == OWScene.SolarSystem || previousScene == OWScene.EyeOfTheUniverse)) {
 					PlayerData.ResetGame();
 					PlayerData.LearnLaunchCodes();
@@ -146,40 +148,7 @@ namespace CheeseTools {
 				}
 			}
 
-			if (Locator.GetPlayerBody() == null) return;
-
-			if (keybinds.Get(SettingKeybind.ToggleSuit)?.WasPressedThisFrame() == true) {
-				PlayerSpacesuit spacesuit = Locator.GetPlayerSuit();
-				if (!spacesuit.IsWearingSuit())
-					spacesuit.SuitUp();
-				else
-					spacesuit.RemoveSuit();
-			}
-			else if (keybinds.Get(SettingKeybind.ToggleSpeedup)?.WasPressedThisFrame() == true) {
-				ToggleSpeedUp();
-			}
-			else if (keybinds.Get(SettingKeybind.LogPlayerLocation)?.WasPressedThisFrame() == true) {
-				OWRigidbody relativeBody = RelativeBody.GetCurrent();
-				RelativeBody.PrintRelativeLocation("Player Position:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
-			}
-			else if (keybinds.Get(SettingKeybind.TeleportShipToPlayer)?.WasPressedThisFrame() == true) {
-				Teleportation.TeleportShipToPlayer();
-			}
-			else if (keybinds.Get(SettingKeybind.EnterExitDreamWorld)?.WasPressedThisFrame() == true) {
-				if (!Locator.GetDreamWorldController()._insideDream) {
-					DreamWorldUtil.EnterDreamWorld();
-				}
-				else {
-					DreamWorldUtil.ExitDreamWorld();
-				}
-			}
-			// dev keybind for testing
-			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
-				OWRigidbody relativeBody = Locator.GetShipBody();
-				RelativeBody.PrintRelativeLocation("Player Position:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
-			}
-
-			if (LoadManager.IsBusy()) return;
+			if (!PlayerData.IsLoaded() || LoadManager.IsBusy()) return;
 
 			if (keybinds.Get(SettingKeybind.FastLoadNewExpedition)?.WasPressedThisFrame() == true) {
 				LoadSolarSystemScene(() => { });
@@ -359,6 +328,39 @@ namespace CheeseTools {
 			}
 			else if (keybinds.Get(SettingKeybind.CustomPracticeState3)?.WasPressedThisFrame() == true) {
 				CustomPracticeState(3);
+			}
+			// dev keybind for testing
+			//else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
+			//	OWRigidbody relativeBody = Locator.GetShipBody();
+			//	RelativeBody.PrintRelativeLocation("Player Position:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
+			//}
+
+			if (Locator.GetPlayerBody() == null) return;
+
+			if (keybinds.Get(SettingKeybind.ToggleSuit)?.WasPressedThisFrame() == true) {
+				PlayerSpacesuit spacesuit = Locator.GetPlayerSuit();
+				if (!spacesuit.IsWearingSuit())
+					spacesuit.SuitUp();
+				else
+					spacesuit.RemoveSuit();
+			}
+			else if (keybinds.Get(SettingKeybind.ToggleSpeedup)?.WasPressedThisFrame() == true) {
+				ToggleSpeedUp();
+			}
+			else if (keybinds.Get(SettingKeybind.LogPlayerLocation)?.WasPressedThisFrame() == true) {
+				OWRigidbody relativeBody = RelativeBody.GetCurrent();
+				RelativeBody.PrintRelativeLocation("Player Position:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
+			}
+			else if (keybinds.Get(SettingKeybind.TeleportShipToPlayer)?.WasPressedThisFrame() == true) {
+				Teleportation.TeleportShipToPlayer();
+			}
+			else if (keybinds.Get(SettingKeybind.EnterExitDreamWorld)?.WasPressedThisFrame() == true) {
+				if (!Locator.GetDreamWorldController()._insideDream) {
+					DreamWorldUtil.EnterDreamWorld();
+				}
+				else {
+					DreamWorldUtil.ExitDreamWorld();
+				}
 			}
 		}
 
@@ -673,7 +675,7 @@ namespace CheeseTools {
 					Teleportation.TeleportPlayerTo(relativeBody, relativeLocation);
 				}
 
-				if (ModHelper.Config.GetSettingsValue<bool>($"Custom Practice State {num} Suit"))
+				if (ModHelper.Config.GetSettingsValue<bool>($"Custom Practice State {num} Spacesuit"))
 					Locator.GetPlayerSuit().SuitUp(false, true);
 				else
 					Locator.GetPlayerSuit().RemoveSuit(true);

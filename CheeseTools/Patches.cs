@@ -181,6 +181,27 @@ namespace CheeseTools {
 			}
 			return false;
 		}
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(PlayerCameraEffectController), nameof(PlayerCameraEffectController.OnStartOfTimeLoop))]
+		public static bool PlayerCameraEffectController_OnStartOfTimeLoop(PlayerCameraEffectController __instance) {
+			if (__instance.gameObject.CompareTag("MainCamera") && LoadManager.GetCurrentScene() != OWScene.EyeOfTheUniverse) {
+				// added afterSceneLoad check to disable wakeup prompt when starting practice state from titlescreen
+				if (LoadManager.GetPreviousScene() == OWScene.TitleScreen && CheeseTools.afterSceneLoad == null) {
+					__instance._owCamera.postProcessingSettings.eyeMask.openness = 0f;
+					__instance._owCamera.postProcessingSettings.bloom.threshold = 0f;
+					__instance._owCamera.postProcessingSettings.eyeMaskEnabled = true;
+					__instance._waitForWakeInput = true;
+					__instance._wakePrompt = new ScreenPrompt(InputLibrary.interact, UITextLibrary.GetString(UITextType.WakeUpPrompt), 0, ScreenPrompt.DisplayState.Normal, false);
+					__instance._wakePrompt.SetVisibility(false);
+					Locator.GetPromptManager().AddScreenPrompt(__instance._wakePrompt, PromptPosition.Center, false);
+					OWTime.Pause(OWTime.PauseType.Sleeping);
+					Locator.GetPauseCommandListener().AddPauseCommandLock();
+					return false;
+				}
+				__instance.WakeUp();
+			}
+			return false;
+		}
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(CosmicInflationController), nameof(CosmicInflationController.UpdateFormation))]
