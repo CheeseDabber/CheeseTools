@@ -39,6 +39,15 @@ namespace CheeseTools.Utils {
 		}
 
 		public static void TeleportPlayerTo(OWRigidbody relativeBody, RelativeLocationData relativeLocation) {
+			if (PlayerState.IsInsideShip()) {
+				ShipCockpitController cockpitController = GameObject.FindObjectOfType<ShipCockpitController>();
+				if (cockpitController._playerAtFlightConsole) {
+					cockpitController.ExitFlightConsole();
+					cockpitController.CompleteExitFlightConsole();
+				}
+				GameObject.FindObjectOfType<HatchController>().OpenHatch();
+				GameObject.FindObjectOfType<ShipTractorBeamSwitch>().ActivateTractorBeam();
+			}
 			TeleportBodyTo(Locator.GetPlayerBody(), relativeBody, relativeLocation);
 			Locator.GetPlayerCameraController().SetDegreesY(0f);
 		}

@@ -9,7 +9,6 @@ namespace CheeseTools.Utils {
 		ToggleSuit,
 		ToggleSpeedup,
 		LogPlayerLocation,
-		LogShipLocation,
 		TeleportShipToPlayer,
 		FastLoadNewExpedition,
 		EnterExitDreamWorld,

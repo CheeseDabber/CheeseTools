@@ -10,7 +10,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // TODO:
-// - custom practice state settings like loop time and put on suit and ship
 // - https://owml.outerwildsmods.com/guides/rebinding/ uhmm apparently made the keybinds class for nothing cause this exists??
 // - make sure mod works without echoes of the eye
 // - practice states from title screen
@@ -163,10 +162,6 @@ namespace CheeseTools {
 				OWRigidbody relativeBody = RelativeBody.GetCurrent();
 				RelativeBody.PrintRelativeLocation("Player Position:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
 			}
-			else if (keybinds.Get(SettingKeybind.LogShipLocation)?.WasPressedThisFrame() == true) {
-				OWRigidbody relativeBody = RelativeBody.GetCurrent();
-				RelativeBody.PrintRelativeLocation("Ship Position:\n", relativeBody, new RelativeLocationData(Locator.GetShipBody(), relativeBody));
-			}
 			else if (keybinds.Get(SettingKeybind.TeleportShipToPlayer)?.WasPressedThisFrame() == true) {
 				Teleportation.TeleportShipToPlayer();
 			}
@@ -178,21 +173,11 @@ namespace CheeseTools {
 					DreamWorldUtil.ExitDreamWorld();
 				}
 			}
-			// Custom Practice States
-			else if (keybinds.Get(SettingKeybind.CustomPracticeState1)?.WasPressedThisFrame() == true) {
-				CustomPracticeState(1);
-			}
-			else if (keybinds.Get(SettingKeybind.CustomPracticeState2)?.WasPressedThisFrame() == true) {
-				CustomPracticeState(2);
-			}
-			else if (keybinds.Get(SettingKeybind.CustomPracticeState3)?.WasPressedThisFrame() == true) {
-				CustomPracticeState(3);
-			}
 			// dev keybind for testing
-			//else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
-				//OWRigidbody relativeBody = RelativeBody.GetCurrent();
-				//RelativeBody.PrintRelativeLocation("Probe Position:\n", relativeBody, new RelativeLocationData(Locator.GetProbe().GetAttachedOWRigidbody(), relativeBody));
-			//}
+			else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
+				OWRigidbody relativeBody = Locator.GetShipBody();
+				RelativeBody.PrintRelativeLocation("Player Position:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
+			}
 
 			if (LoadManager.IsBusy()) return;
 
@@ -365,6 +350,16 @@ namespace CheeseTools {
 					Teleportation.TeleportPlayerTo(GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-54.48f, 1f, 5999.10f), playerOrientation, Vector3.zero));
 				});
 			}
+			// Custom Practice States
+			else if (keybinds.Get(SettingKeybind.CustomPracticeState1)?.WasPressedThisFrame() == true) {
+				CustomPracticeState(1);
+			}
+			else if (keybinds.Get(SettingKeybind.CustomPracticeState2)?.WasPressedThisFrame() == true) {
+				CustomPracticeState(2);
+			}
+			else if (keybinds.Get(SettingKeybind.CustomPracticeState3)?.WasPressedThisFrame() == true) {
+				CustomPracticeState(3);
+			}
 		}
 
 		private int lastFrameConfigureGotCalled = -1;
@@ -376,7 +371,6 @@ namespace CheeseTools {
 			keybinds.Add(SettingKeybind.ToggleSuit, config.GetSettingsValue<string>("Toggle Suit"));
 			keybinds.Add(SettingKeybind.ToggleSpeedup, config.GetSettingsValue<string>("Toggle Speedup"));
 			keybinds.Add(SettingKeybind.LogPlayerLocation, config.GetSettingsValue<string>("Log Player Location"));
-			keybinds.Add(SettingKeybind.LogShipLocation, config.GetSettingsValue<string>("Log Ship Location"));
 			keybinds.Add(SettingKeybind.TeleportShipToPlayer, config.GetSettingsValue<string>("Teleport Ship To Player"));
 			keybinds.Add(SettingKeybind.FastLoadNewExpedition, config.GetSettingsValue<string>("Fast Load New Expedition"));
 			keybinds.Add(SettingKeybind.EnterExitDreamWorld, config.GetSettingsValue<string>("Enter/Exit DreamWorld"));
@@ -525,6 +519,18 @@ namespace CheeseTools {
 			}
 		}
 
+		public static void LoadSceneIfNotInScene(OWScene scene, Action afterSceneLoad) {
+			if (scene == OWScene.SolarSystem && LoadManager.GetCurrentScene() != OWScene.SolarSystem) {
+				LoadSolarSystemScene(afterSceneLoad);
+				return;
+			}
+			else if (scene == OWScene.EyeOfTheUniverse && LoadManager.GetCurrentScene() != OWScene.EyeOfTheUniverse) {
+				LoadEyeScene(EyeState.AboardVessel, afterSceneLoad);
+				return;
+			}
+			afterSceneLoad();
+		}
+
 		public static void LoadSolarSystemScene(Action afterSceneLoad) {
 			LoadSolarSystemScene(afterSceneLoad, instance.ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save"));
 		}
@@ -548,6 +554,11 @@ namespace CheeseTools {
 		}
 
 		public static void SleepUntil(double seconds, Action afterSleepUntil) {
+			if (seconds == 0) {
+				afterSleepUntil();
+				return;
+			}
+
 			Campfire campfire = GetClosestCampfire();
 			campfire.StartSleeping();
 			campfire.StartFastForwarding();
@@ -646,21 +657,43 @@ namespace CheeseTools {
 		}
 
 		private void CustomPracticeState(int num) {
-			OWRigidbody relativeBody = RelativeBody.GetFromString(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Planet"));
-			RelativeLocationData relativeLocation = new RelativeLocationData(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Position")),
-				Quaternion.Euler(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Rotation"))),
-				Vector3.zero
-			);
-			Teleportation.TeleportPlayerTo(relativeBody, relativeLocation);
+			Action action = () => {
+				OWRigidbody relativeBody = RelativeBody.GetFromString(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Planet"));
+				RelativeLocationData relativeLocation = new RelativeLocationData(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Position")),
+					Quaternion.Euler(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Rotation"))),
+					Vector3.zero
+				);
+				if (ModHelper.Config.GetSettingsValue<bool>($"Custom Practice State {num} Ship")) {
+					Vector3 relativePlayerPosToShipWhenSeated = new Vector3(0f, 0.34f, 4.22f);
+					relativeLocation.localPosition = relativeLocation.localPosition - relativePlayerPosToShipWhenSeated;
+					Teleportation.TeleportBodyTo(Locator.GetShipBody(), relativeBody, relativeLocation);
+					Teleportation.TeleportPlayerToShip();
+				}
+				else {
+					Teleportation.TeleportPlayerTo(relativeBody, relativeLocation);
+				}
+
+				if (ModHelper.Config.GetSettingsValue<bool>($"Custom Practice State {num} Suit"))
+					Locator.GetPlayerSuit().SuitUp(false, true);
+				else
+					Locator.GetPlayerSuit().RemoveSuit(true);
+			};
+
+			var loopTime = ModHelper.Config.GetSettingsValue<double>($"Custom Practice State {num} Loop Time");
+			if (LoadManager.GetCurrentScene() != OWScene.SolarSystem || loopTime > 0) {
+				LoadSolarSystemScene(() => {
+					SleepUntil(loopTime, action);
+				}, loopTime > 0 || ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save"));
+			} else {
+				action();
+			}
 		}
 
 		private void UpdateInfiniteResources() {
-			bool infFuel = ModHelper.Config.GetSettingsValue<bool>("Infinite Fuel");
-			bool infOxygen = ModHelper.Config.GetSettingsValue<bool>("Infinite Oxygen");
-			if ((infFuel || infOxygen) && Locator.GetPlayerTransform()?.TryGetComponent(out PlayerResources resources) == true) {
-				if (infFuel)
+			if (Locator.GetPlayerTransform()?.TryGetComponent(out PlayerResources resources) == true) {
+				if (ModHelper.Config.GetSettingsValue<bool>("Infinite Fuel"))
 					resources.SetValue("_currentFuel", resources.GetValue<float>("_maxFuel"));
-				if (infOxygen)
+				if (ModHelper.Config.GetSettingsValue<bool>("Infinite Oxygen"))
 					resources.SetValue("_currentOxygen", resources.GetValue<float>("_maxOxygen"));
 			}
 		}

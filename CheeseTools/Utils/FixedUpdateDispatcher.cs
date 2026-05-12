@@ -19,7 +19,7 @@ namespace CheeseTools.Utils {
 		}
 
 		public static void FixedUpdate() {
-			for (int i = 0; i < _actions.Count; ++i) {
+			for (int i = _actions.Count - 1; i >= 0; i--) {
 				var scheduledAction = _actions[i];
 				scheduledAction.remainingTicks -= 1;
 				if (scheduledAction.remainingTicks < 1) {

@@ -95,14 +95,14 @@
         "The Interloper",
         "SunStation",
         "Quantum Moon",
-        "WhiteHole",
-        "The Stranger",
-        "DreamWorld",
-	      "EyeOfTheUniverse"
+        "WhiteHole"
       ]
     },
     "Custom Practice State 1 Position": "0.0, 0.0, 0.0",
     "Custom Practice State 1 Rotation": "0.0, 0.0, 0.0",
+    "Custom Practice State 1 Loop Time": 0,
+    "Custom Practice State 1 Suit": false,
+    "Custom Practice State 1 Ship": false,
 
     "         ": { "type": "separator" },
     "Custom Practice State 2": "Slash+Digit2",
@@ -131,14 +131,14 @@
         "The Interloper",
         "SunStation",
         "Quantum Moon",
-        "WhiteHole",
-        "The Stranger",
-        "DreamWorld",
-	      "EyeOfTheUniverse"
+        "WhiteHole"
       ]
     },
     "Custom Practice State 2 Position": "0.0, 0.0, 0.0",
     "Custom Practice State 2 Rotation": "0.0, 0.0, 0.0",
+    "Custom Practice State 2 Loop Time": 0,
+    "Custom Practice State 2 Suit": false,
+    "Custom Practice State 2 Ship": false,
 
     "          ": { "type": "separator" },
     "Custom Practice State 3": "Slash+Digit3",
@@ -167,13 +167,13 @@
         "The Interloper",
         "SunStation",
         "Quantum Moon",
-        "WhiteHole",
-        "The Stranger",
-        "DreamWorld",
-	      "EyeOfTheUniverse"
+        "WhiteHole"
       ]
     },
     "Custom Practice State 3 Position": "0.0, 0.0, 0.0",
-    "Custom Practice State 3 Rotation": "0.0, 0.0, 0.0"
+    "Custom Practice State 3 Rotation": "0.0, 0.0, 0.0",
+    "Custom Practice State 3 Loop Time": 0,
+    "Custom Practice State 3 Suit": false,
+    "Custom Practice State 3 Ship": false
   }
 }
