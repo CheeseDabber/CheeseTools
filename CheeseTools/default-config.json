@@ -7,7 +7,7 @@
     "Infinite Oxygen": false,
     "Player Invincibility": false,
     "Ship Invincibility": false,
-    "Create Launch Codes Save": false,
+    "Create Launch Codes Save !OVERWRITES SAVEFILE!": false,
     "Show Loop Time": false,
     "Mark Stranger": false,
     "Show Sectors": false,
@@ -15,12 +15,12 @@
     // Binds
     "": { "type": "separator" },
     "Log Names Of Pressed Keys": false,
-    "Toggle Suit": "Slash+T",
-    "Toggle Speedup": "Slash+Backslash",
-    "Log Player Location": "Slash+RightBracket",
-    "Teleport Ship To Player": "Slash+Backquote",
-    "Fast Load New Expedition": "Slash+R",
-    "Enter/Exit DreamWorld": "Slash+L",
+    "Toggle Spacesuit": "Slash+R",
+    "Fast Load New Expedition": "Slash+T",
+    "Teleport Ship To Player": "Slash+Y",
+    "Toggle Speedup": "Slash+U",
+    "Enter/Exit DreamWorld": "Slash+I",
+    "Log Player Location": "Slash+O",
     "DreamWorld Enter Campfire": {
       "type": "selector",
       "value": "Cinder Isles",
@@ -70,7 +70,7 @@
     "       ": { "type": "separator" },
     "        ": { "type": "separator" },
     "Custom Practice State 1": "Slash+Digit1",
-    "Custom Practice State 1 Planet": {
+    "Custom Practice State 1 Body": {
       "type": "selector",
       "value": "Timber Hearth",
       "options": [
@@ -106,7 +106,7 @@
 
     "         ": { "type": "separator" },
     "Custom Practice State 2": "Slash+Digit2",
-    "Custom Practice State 2 Planet": {
+    "Custom Practice State 2 Body": {
       "type": "selector",
       "value": "Timber Hearth",
       "options": [
@@ -142,7 +142,7 @@
 
     "          ": { "type": "separator" },
     "Custom Practice State 3": "Slash+Digit3",
-    "Custom Practice State 3 Planet": {
+    "Custom Practice State 3 Body": {
       "type": "selector",
       "value": "Timber Hearth",
       "options": [

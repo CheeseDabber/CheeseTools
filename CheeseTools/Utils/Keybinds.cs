@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace CheeseTools.Utils {
 	public enum SettingKeybind {
-		ToggleSuit,
+		ToggleSpacesuit,
 		ToggleSpeedup,
 		LogPlayerLocation,
 		TeleportShipToPlayer,

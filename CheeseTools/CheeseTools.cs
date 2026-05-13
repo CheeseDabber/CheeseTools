@@ -95,7 +95,7 @@ namespace CheeseTools {
 			}
 			if (newScene == OWScene.TitleScreen) {
 				inPracticeState = false;
-				if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save") && (previousScene == OWScene.SolarSystem || previousScene == OWScene.EyeOfTheUniverse)) {
+				if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!") && (previousScene == OWScene.SolarSystem || previousScene == OWScene.EyeOfTheUniverse)) {
 					PlayerData.ResetGame();
 					PlayerData.LearnLaunchCodes();
 					PlayerData.SaveLoopCount(3);
@@ -338,7 +338,7 @@ namespace CheeseTools {
 
 			if (Locator.GetPlayerBody() == null) return;
 
-			if (keybinds.Get(SettingKeybind.ToggleSuit)?.WasPressedThisFrame() == true) {
+			if (keybinds.Get(SettingKeybind.ToggleSpacesuit)?.WasPressedThisFrame() == true) {
 				PlayerSpacesuit spacesuit = Locator.GetPlayerSuit();
 				if (!spacesuit.IsWearingSuit())
 					spacesuit.SuitUp();
@@ -350,7 +350,7 @@ namespace CheeseTools {
 			}
 			else if (keybinds.Get(SettingKeybind.LogPlayerLocation)?.WasPressedThisFrame() == true) {
 				OWRigidbody relativeBody = RelativeBody.GetCurrent();
-				RelativeBody.PrintRelativeLocation("Player Position:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
+				RelativeBody.PrintRelativeLocation("Player Location:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
 			}
 			else if (keybinds.Get(SettingKeybind.TeleportShipToPlayer)?.WasPressedThisFrame() == true) {
 				Teleportation.TeleportShipToPlayer();
@@ -374,12 +374,12 @@ namespace CheeseTools {
 			lastFrameConfigureGotCalled = Time.frameCount;
 
 			keybinds.Clear();
-			keybinds.Add(SettingKeybind.ToggleSuit, config.GetSettingsValue<string>("Toggle Suit"));
-			keybinds.Add(SettingKeybind.ToggleSpeedup, config.GetSettingsValue<string>("Toggle Speedup"));
-			keybinds.Add(SettingKeybind.LogPlayerLocation, config.GetSettingsValue<string>("Log Player Location"));
-			keybinds.Add(SettingKeybind.TeleportShipToPlayer, config.GetSettingsValue<string>("Teleport Ship To Player"));
+			keybinds.Add(SettingKeybind.ToggleSpacesuit, config.GetSettingsValue<string>("Toggle Spacesuit"));
 			keybinds.Add(SettingKeybind.FastLoadNewExpedition, config.GetSettingsValue<string>("Fast Load New Expedition"));
+			keybinds.Add(SettingKeybind.TeleportShipToPlayer, config.GetSettingsValue<string>("Teleport Ship To Player"));
+			keybinds.Add(SettingKeybind.ToggleSpeedup, config.GetSettingsValue<string>("Toggle Speedup"));
 			keybinds.Add(SettingKeybind.EnterExitDreamWorld, config.GetSettingsValue<string>("Enter/Exit DreamWorld"));
+			keybinds.Add(SettingKeybind.LogPlayerLocation, config.GetSettingsValue<string>("Log Player Location"));
 
 			keybinds.Add(SettingKeybind.ATPPracticeState, config.GetSettingsValue<string>("ATP Practice State"));
 			keybinds.Add(SettingKeybind.ATPInteriorPracticeState, config.GetSettingsValue<string>("ATP Interior Practice State"));
@@ -538,7 +538,7 @@ namespace CheeseTools {
 		}
 
 		public static void LoadSolarSystemScene(Action afterSceneLoad) {
-			LoadSolarSystemScene(afterSceneLoad, instance.ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save"));
+			LoadSolarSystemScene(afterSceneLoad, instance.ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!"));
 		}
 
 		public static void LoadSolarSystemScene(Action afterSceneLoad, bool launchCodes) {
@@ -664,7 +664,7 @@ namespace CheeseTools {
 
 		private void CustomPracticeState(int num) {
 			Action action = () => {
-				OWRigidbody relativeBody = RelativeBody.GetFromString(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Planet"));
+				OWRigidbody relativeBody = RelativeBody.GetFromString(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Body"));
 				RelativeLocationData relativeLocation = new RelativeLocationData(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Position")),
 					Quaternion.Euler(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Rotation"))),
 					Vector3.zero
@@ -689,7 +689,7 @@ namespace CheeseTools {
 			if (LoadManager.GetCurrentScene() != OWScene.SolarSystem || loopTime > 0) {
 				LoadSolarSystemScene(() => {
 					SleepUntil(loopTime, action);
-				}, loopTime > 0 || ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save"));
+				}, loopTime > 0 || ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!"));
 			} else {
 				action();
 			}
