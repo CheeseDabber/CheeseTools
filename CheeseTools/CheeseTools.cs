@@ -10,9 +10,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // TODO:
-// - practice states from title screen
-// - https://owml.outerwildsmods.com/guides/rebinding/ uhmm apparently made the keybinds class for nothing cause this exists??
-// - make sure mod works without echoes of the eye
 // - add watermark
 
 namespace CheeseTools {
@@ -128,11 +125,15 @@ namespace CheeseTools {
 			CheckInput();
 
 			if (Locator.GetPlayerBody() == null) return;
+
 			UpdateInfiniteResources();
 			UpdateLoopTimeText();
-			UpdateStrangerMarker();
 			ScreenTimerController.Update();
 			Locator.GetPauseCommandListener().enabled = true;
+
+			if (EntitlementsManager.IsDlcOwned() != EntitlementsManager.AsyncOwnershipStatus.Owned) return;
+
+			UpdateStrangerMarker();
 		}
 
 		public void FixedUpdate() {
@@ -354,7 +355,10 @@ namespace CheeseTools {
 			else if (keybinds.Get(SettingKeybind.TeleportShipToPlayer)?.WasPressedThisFrame() == true) {
 				Teleportation.TeleportShipToPlayer();
 			}
-			else if (keybinds.Get(SettingKeybind.EnterExitDreamWorld)?.WasPressedThisFrame() == true) {
+
+			if (EntitlementsManager.IsDlcOwned() != EntitlementsManager.AsyncOwnershipStatus.Owned) return;
+
+			if (keybinds.Get(SettingKeybind.EnterExitDreamWorld)?.WasPressedThisFrame() == true) {
 				if (!Locator.GetDreamWorldController()._insideDream) {
 					DreamWorldUtil.EnterDreamWorld();
 				}
