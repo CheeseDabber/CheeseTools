@@ -9,9 +9,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
-// TODO:
-// - add watermark
-
 namespace CheeseTools {
 	public class CheeseTools : ModBehaviour {
 		public static CheeseTools instance;
@@ -22,6 +19,8 @@ namespace CheeseTools {
 		public static Action afterSleepUntil;
 		public static double wakeUpTime = 0;
 
+		private static string version = "1.0.0";
+		private static ScreenPrompt watermark = new ScreenPrompt($"CheeseTools v{version}: Enabled");
 		private static ScreenPrompt loopTimeText = new ScreenPrompt("");
 		private static EyeState afterSceneLoadEyeState;
 		private static NomaiWarpTransmitter atpWarpTransmitter => GameObject.Find("Prefab_NOM_WarpTransmitter (1)")?.GetComponent<NomaiWarpTransmitter>();
@@ -123,6 +122,7 @@ namespace CheeseTools {
 
 		public void Update() {
 			CheckInput();
+			UpdateWatermark();
 
 			if (Locator.GetPlayerBody() == null) return;
 
@@ -744,6 +744,18 @@ namespace CheeseTools {
 			}
 			else {
 				Locator.GetPromptManager().RemoveScreenPrompt(loopTimeText);
+			}
+		}
+
+		private void UpdateWatermark() {
+			if (ModHelper.Config.GetSettingsValue<bool>("Watermark")) {
+				if (Locator.GetPromptManager()?.GetScreenPromptList(PromptPosition.LowerLeft)?.Contains(watermark) == false) {
+					Locator.GetPromptManager().AddScreenPrompt(watermark, true);
+				}
+			} else {
+				if (Locator.GetPromptManager()?.GetScreenPromptList(PromptPosition.LowerLeft)?.Contains(watermark) == true) {
+					Locator.GetPromptManager().RemoveScreenPrompt(watermark, PromptPosition.LowerLeft);
+				}
 			}
 		}
 

@@ -4,7 +4,7 @@
   "author": "CheeseRunner1",
   "name": "CheeseTools",
   "uniqueName": "CheeseRunner1.CheeseTools",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "owmlVersion": "2.15.1",
   "dependencies": []
 }
