@@ -9,10 +9,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
-// TODO:
-// - SignalscopeUI
-// - make thumbnail better
-
 namespace CheeseTools {
 	public class CheeseTools : ModBehaviour {
 		public static CheeseTools instance;
@@ -62,6 +58,7 @@ namespace CheeseTools {
 			GlobalMessenger.AddListener("StartVesselWarp", OnStartVesselWarp);
 			GlobalMessenger<EyeState>.AddListener("EyeStateChanged", OnEyeStateChanged);
 			GlobalMessenger<DeathType>.AddListener("PlayerDeath", OnPlayerDeath);
+			GlobalMessenger<Signalscope>.AddListener("EnterSignalscopeZoom", OnEnterSignalScopeZoom);
 
 			ScreenTimerController.Start();
 		}
@@ -337,8 +334,7 @@ namespace CheeseTools {
 			}
 			// dev keybind for testing
 			//else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
-			//	OWRigidbody relativeBody = Locator.GetShipBody();
-			//	RelativeBody.PrintRelativeLocation("Player Position:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
+
 			//}
 
 			if (Locator.GetPlayerBody() == null) return;
@@ -437,6 +433,14 @@ namespace CheeseTools {
 			if (deathType == DeathType.BigBang) {
 				instrumentTimer.Stop();
 			}
+		}
+
+		public void OnEnterSignalScopeZoom(Signalscope signalscope) {
+			// hacky fix for signalscope UI not loading in on first zoom
+			ModHelper.Events.Unity.FireInNUpdates(() => {
+				signalscope._signalscopeUI.OnExitSignalscopeZoom();
+				signalscope._signalscopeUI.OnEnterSignalscopeZoom(signalscope);
+			}, 2);
 		}
 
 		public void OnEnterSector(Sector sector) {
