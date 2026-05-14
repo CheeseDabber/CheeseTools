@@ -25,13 +25,13 @@ Keybinds in this mod work as text with a `+` separating each key. To edit keybin
 | :-: | :-- |
 `/ + R` | Toggle Spacesuit
 `/ + T` | Fast Load New Expedition
-`/ + Y` | Teleport Player To Ship
+`/ + Y` | Teleport Ship To Player
 `/ + U` | Toggle Speedup
 `/ + I` | Enter/Exit Dreamworld
 `/ + O` | Log Player Location
 
 ### Practice States
-Practice states are the main feature of this mod and provide a way to practice specific parts of a speedrun. There are 8 pre-made ones specifically for practicing any%. While practicing I also find it important to be able to quickly try again which is why I made it so starting a practice state automatically loads the scene. No need to quit back to the titlescreen and start a new expedition yourself. You can start any practice state from anywhere at anytime.
+Practice states are the main feature of this mod and provide a way to practice specific parts of a speedrun. There are 8 pre-made ones specifically for practicing any%. While practicing I find it important to be able to quickly try again which is why I have made it so starting a practice state automatically loads the scene. No need to quit back to the titlescreen and start a new expedition yourself. You can start any practice state from anywhere at anytime.
 ### ATP
 **ATP Practice State:** `P + 1`  
 **ATP Loop Time:** The time the practice state starts.  

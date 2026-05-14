@@ -227,10 +227,10 @@ namespace CheeseTools {
 					Locator.GetPlayerSuit().SuitUp(false, true);
 					RepairShip();
 					OWRigidbody ship = Locator.GetShipBody();
-					RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(175.26f, -291.37f, -179.26f), Quaternion.Euler(27.46f, 111.93f, 285.54f), Vector3.zero);
+					RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(-11.94f, -284.85f, -138.69f), Quaternion.Euler(9.78f, 104.03f, 296.32f), Vector3.zero);
 					Teleportation.TeleportPlayerToShip();
 					Teleportation.TeleportBodyTo(ship, Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody(), shipLocation);
-					ship.SetVelocity(Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody().GetVelocity() + ship.transform.forward * 50);
+					ship.SetVelocity(Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody().GetVelocity() + ship.transform.forward * 100);
 					Items.PickUpItem(Items.GetWarpCore());
 				});
 			}
@@ -332,8 +332,13 @@ namespace CheeseTools {
 			else if (keybinds.Get(SettingKeybind.CustomPracticeState3)?.WasPressedThisFrame() == true) {
 				CustomPracticeState(3);
 			}
-			// dev keybind for testing
+			// dev keybinds for testing
 			//else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
+			//	OWRigidbody relativeBody = RelativeBody.GetCurrent();
+			//	RelativeBody.PrintRelativeLocation("Ship Location:\n", relativeBody, new RelativeLocationData(Locator.GetShipBody(), relativeBody));
+			//	Console.WriteLine("Ship Speed: " + Locator.GetShipBody().GetVelocity().magnitude);
+			//}
+			//else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F2].wasPressedThisFrame) {
 
 			//}
 
