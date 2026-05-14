@@ -19,7 +19,7 @@ namespace CheeseTools {
         public static Action afterSleepUntil;
         public static double wakeUpTime = 0;
 
-        private static string version = "1.0.0";
+        private static string version = "1.0.1";
         private static ScreenPrompt watermark = new ScreenPrompt($"CheeseTools v{version}: Enabled");
         private static ScreenPrompt loopTimeText = new ScreenPrompt("");
         private static EyeState afterSceneLoadEyeState;
