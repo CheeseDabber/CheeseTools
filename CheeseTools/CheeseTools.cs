@@ -9,6 +9,10 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
+// TODO:
+// - SignalscopeUI
+// - make thumbnail better
+
 namespace CheeseTools {
 	public class CheeseTools : ModBehaviour {
 		public static CheeseTools instance;
@@ -99,6 +103,7 @@ namespace CheeseTools {
 					PlayerData.ResetGame();
 					PlayerData.LearnLaunchCodes();
 					PlayerData.SaveLoopCount(3);
+					Console.WriteLine("RESET GAME DATA");
 				}
 			}
 			else {
@@ -180,7 +185,7 @@ namespace CheeseTools {
 					atpWarpTransmitter._alignmentWindow = 360f;
 					Teleportation.TeleportPlayerTo(GameObject.Find("TowerTwin_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-0.17f, 2.17f, -124.05f), Quaternion.Euler(271.01f, 3.51f, 356.50f), Vector3.zero));
 					Locator.GetToolModeSwapper().EquipToolMode(ToolMode.Probe);
-				}, false);
+				});
 			}
 			else if (keybinds.Get(SettingKeybind.BramblePracticeState)?.WasPressedThisFrame() == true) {
 				LoadSolarSystemScene(() => {
@@ -218,7 +223,7 @@ namespace CheeseTools {
 					Teleportation.TeleportBodyTo(ship, Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody(), shipLocation);
 					ship.SetVelocity(Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody().GetVelocity() + ship.transform.forward * ModHelper.Config.GetSettingsValue<int>("Ultimate Feldsparring Ship Speed"));
 					Items.PickUpItem(Items.GetWarpCore());
-				}, false);
+				});
 			}
 			else if (keybinds.Get(SettingKeybind.VesselPracticeState)?.WasPressedThisFrame() == true) {
 				LoadSolarSystemScene(() => {
@@ -230,7 +235,7 @@ namespace CheeseTools {
 					Teleportation.TeleportBodyTo(ship, Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody(), shipLocation);
 					ship.SetVelocity(Locator.GetMinorAstroObject("Angler Nest Dimension").GetAttachedOWRigidbody().GetVelocity() + ship.transform.forward * 50);
 					Items.PickUpItem(Items.GetWarpCore());
-				}, false);
+				});
 			}
 			else if (keybinds.Get(SettingKeybind.VesselClipPracticeState)?.WasPressedThisFrame() == true) {
 				LoadSolarSystemScene(() => {
@@ -283,7 +288,7 @@ namespace CheeseTools {
 					// if you warp before bundles are loaded the game gets stuck infinitely loading.
 					// so I just forcefully clear it. no clue if this breaks anything
 					StreamingManager.s_activeBundles.Clear();
-				}, true);
+				});
 			}
 			else if (keybinds.Get(SettingKeybind.ClonePracticeState)?.WasPressedThisFrame() == true) {
 				LoadEyeScene(EyeState.AboardVessel, () => {
@@ -537,16 +542,19 @@ namespace CheeseTools {
 			afterSceneLoad();
 		}
 
-		public static void LoadSolarSystemScene(Action afterSceneLoad) {
-			LoadSolarSystemScene(afterSceneLoad, instance.ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!"));
-		}
-
-		public static void LoadSolarSystemScene(Action afterSceneLoad, bool launchCodes) {
-			PlayerData.ResetGame();
-			if (launchCodes) {
-				PlayerData.LearnLaunchCodes();
-				PlayerData.SaveLoopCount(3);
+		public static void LoadSolarSystemScene(Action afterSceneLoad, bool launchCodes = false) {
+			bool resetSave = instance.ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!");
+			if (launchCodes || resetSave) {
+				if (resetSave) {
+					PlayerData.ResetGame();
+				}
+				if (!PlayerData.KnowsLaunchCodes()) {
+					PlayerData.LearnLaunchCodes();
+					PlayerData.SaveLoopCount(3);
+				}
 			}
+			PlayerData._currentGameSave.warpedToTheEye = false;
+			PlayerData.SaveCurrentGame();
 
 			LoadManager.LoadScene(OWScene.SolarSystem);
 			CheeseTools.afterSceneLoad = afterSceneLoad;
