@@ -44,7 +44,6 @@ namespace CheeseTools {
         }
 
         public void Start() {
-            Console.WriteLine($"{nameof(CheeseTools)} has been loaded!", MessageType.Success);
             new Harmony("CheeseRunner1.CheeseTools").PatchAll(Assembly.GetExecutingAssembly());
 
             OnCompleteSceneLoad(OWScene.TitleScreen, OWScene.TitleScreen);
@@ -62,6 +61,7 @@ namespace CheeseTools {
             GlobalMessenger<Signalscope>.AddListener("EnterSignalscopeZoom", OnEnterSignalScopeZoom);
 
             ScreenTimerController.Start();
+            Console.WriteLine($"{nameof(CheeseTools)} v{version} initialized.", MessageType.Success);
         }
 
         public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene) {
@@ -153,11 +153,11 @@ namespace CheeseTools {
 
             if (!PlayerData.IsLoaded() || LoadManager.IsBusy()) return;
 
-            if (keybinds.Get(SettingKeybind.FastLoadNewExpedition)?.WasPressedThisFrame() == true) {
+            if (keybinds.Get("Fast Load New Expedition")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(null);
             }
             //Practice States
-            else if (keybinds.Get(SettingKeybind.ATPPracticeState)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("ATP Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
                     SleepUntil(ModHelper.Config.GetSettingsValue<double>("ATP Loop Time"), () => {
                         RelativeLocationData location = new RelativeLocationData(new Vector3(17.74f, -44.73f, 185.74f), Quaternion.Euler(new Vector3(294.14f, 63.13f, 124.75f)), Vector3.zero);
@@ -173,7 +173,7 @@ namespace CheeseTools {
                     });
                 }, true);
             }
-            else if (keybinds.Get(SettingKeybind.ATPInteriorPracticeState)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("ATP Interior Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
                     Locator.GetPlayerSuit().SuitUp(false, true);
                     var sandSphere = GameObject.Find("SandSphere_Draining");
@@ -184,7 +184,7 @@ namespace CheeseTools {
                     Locator.GetToolModeSwapper().EquipToolMode(ToolMode.Probe);
                 });
             }
-            else if (keybinds.Get(SettingKeybind.BramblePracticeState)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Bramble Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
                     SleepUntil(490, () => {
                         Locator.GetPlayerSuit().SuitUp(false, true);
@@ -210,7 +210,7 @@ namespace CheeseTools {
                     });
                 }, true);
             }
-            else if (keybinds.Get(SettingKeybind.FeldsparringPracticeState)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Ultimate Feldsparring Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
                     Locator.GetPlayerSuit().SuitUp(false, true);
                     RepairShip();
@@ -222,7 +222,7 @@ namespace CheeseTools {
                     Items.PickUpItem(Items.GetWarpCore());
                 });
             }
-            else if (keybinds.Get(SettingKeybind.VesselPracticeState)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Vessel Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
                     Locator.GetPlayerSuit().SuitUp(false, true);
                     RepairShip();
@@ -234,7 +234,7 @@ namespace CheeseTools {
                     Items.PickUpItem(Items.GetWarpCore());
                 });
             }
-            else if (keybinds.Get(SettingKeybind.VesselClipPracticeState)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Vessel Clip Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
                     Locator.GetPlayerSuit().SuitUp(false, true);
                     Teleportation.TeleportPlayerTo(GameObject.Find("DB_VesselDimension_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(175.66f, 13.39f, -19.34f), Quaternion.Euler(353.87f, 95.65f, 12.28f), Vector3.zero));
@@ -287,14 +287,14 @@ namespace CheeseTools {
                     StreamingManager.s_activeBundles.Clear();
                 });
             }
-            else if (keybinds.Get(SettingKeybind.ClonePracticeState)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Clone Practice State")?.WasPressedThisFrame() == true) {
                 LoadEyeScene(EyeState.AboardVessel, () => {
                     Locator.GetPlayerSuit().SuitUp(false, true);
                     OWRigidbody eyeBody = GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody();
                     Teleportation.TeleportPlayerTo(eyeBody, new RelativeLocationData(new Vector3(-80.616f, -3905.84f, 180.686f), Quaternion.identity, Vector3.zero));
                 });
             }
-            else if (keybinds.Get(SettingKeybind.InstrumentPracticeState)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Instrument Hunt Practice State")?.WasPressedThisFrame() == true) {
                 LoadEyeScene(EyeState.ForestIsDark, () => {
                     Locator.GetPlayerSuit().SuitUp(false, true);
                     Locator.GetFlashlight().TurnOn();
@@ -323,13 +323,13 @@ namespace CheeseTools {
                 });
             }
             // Custom Practice States
-            else if (keybinds.Get(SettingKeybind.CustomPracticeState1)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Custom Practice State 1")?.WasPressedThisFrame() == true) {
                 CustomPracticeState(1);
             }
-            else if (keybinds.Get(SettingKeybind.CustomPracticeState2)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Custom Practice State 2")?.WasPressedThisFrame() == true) {
                 CustomPracticeState(2);
             }
-            else if (keybinds.Get(SettingKeybind.CustomPracticeState3)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Custom Practice State 3")?.WasPressedThisFrame() == true) {
                 CustomPracticeState(3);
             }
             // dev keybinds for testing
@@ -344,27 +344,27 @@ namespace CheeseTools {
 
             if (Locator.GetPlayerBody() == null) return;
 
-            if (keybinds.Get(SettingKeybind.ToggleSpacesuit)?.WasPressedThisFrame() == true) {
+            if (keybinds.Get("Toggle Spacesuit")?.WasPressedThisFrame() == true) {
                 PlayerSpacesuit spacesuit = Locator.GetPlayerSuit();
                 if (!spacesuit.IsWearingSuit())
                     spacesuit.SuitUp();
                 else
                     spacesuit.RemoveSuit();
             }
-            else if (keybinds.Get(SettingKeybind.ToggleSpeedup)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Toggle Speedup")?.WasPressedThisFrame() == true) {
                 ToggleSpeedUp();
             }
-            else if (keybinds.Get(SettingKeybind.LogPlayerLocation)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Log Player Location")?.WasPressedThisFrame() == true) {
                 OWRigidbody relativeBody = RelativeBody.GetCurrent();
                 RelativeBody.PrintRelativeLocation("Player Location:\n", relativeBody, new RelativeLocationData(Locator.GetPlayerBody(), relativeBody));
             }
-            else if (keybinds.Get(SettingKeybind.TeleportShipToPlayer)?.WasPressedThisFrame() == true) {
+            else if (keybinds.Get("Teleport Ship To Player")?.WasPressedThisFrame() == true) {
                 Teleportation.TeleportShipToPlayer();
             }
 
             if (EntitlementsManager.IsDlcOwned() != EntitlementsManager.AsyncOwnershipStatus.Owned) return;
 
-            if (keybinds.Get(SettingKeybind.EnterExitDreamWorld)?.WasPressedThisFrame() == true) {
+            if (keybinds.Get("Enter/Exit DreamWorld")?.WasPressedThisFrame() == true) {
                 if (!Locator.GetDreamWorldController()._insideDream) {
                     DreamWorldUtil.EnterDreamWorld();
                 }
@@ -380,25 +380,26 @@ namespace CheeseTools {
             lastFrameConfigureGotCalled = Time.frameCount;
 
             keybinds.Clear();
-            keybinds.Add(SettingKeybind.ToggleSpacesuit, config.GetSettingsValue<string>("Toggle Spacesuit"));
-            keybinds.Add(SettingKeybind.FastLoadNewExpedition, config.GetSettingsValue<string>("Fast Load New Expedition"));
-            keybinds.Add(SettingKeybind.TeleportShipToPlayer, config.GetSettingsValue<string>("Teleport Ship To Player"));
-            keybinds.Add(SettingKeybind.ToggleSpeedup, config.GetSettingsValue<string>("Toggle Speedup"));
-            keybinds.Add(SettingKeybind.EnterExitDreamWorld, config.GetSettingsValue<string>("Enter/Exit DreamWorld"));
-            keybinds.Add(SettingKeybind.LogPlayerLocation, config.GetSettingsValue<string>("Log Player Location"));
+            keybinds.Add("Toggle Spacesuit", "Slash+R");
+            keybinds.Add("Fast Load New Expedition", "Slash+T");
+            keybinds.Add("Teleport Ship To Player", "Slash+Y");
+            keybinds.Add("Toggle Speedup", "Slash+U");
+            keybinds.Add("Enter/Exit DreamWorld", "Slash+I");
+            keybinds.Add("Log Player Location", "Slash+O");
 
-            keybinds.Add(SettingKeybind.ATPPracticeState, config.GetSettingsValue<string>("ATP Practice State"));
-            keybinds.Add(SettingKeybind.ATPInteriorPracticeState, config.GetSettingsValue<string>("ATP Interior Practice State"));
-            keybinds.Add(SettingKeybind.BramblePracticeState, config.GetSettingsValue<string>("Bramble Practice State"));
-            keybinds.Add(SettingKeybind.FeldsparringPracticeState, config.GetSettingsValue<string>("Ultimate Feldsparring Practice State"));
-            keybinds.Add(SettingKeybind.VesselPracticeState, config.GetSettingsValue<string>("Vessel Practice State"));
-            keybinds.Add(SettingKeybind.VesselClipPracticeState, config.GetSettingsValue<string>("Vessel Clip Practice State"));
-            keybinds.Add(SettingKeybind.ClonePracticeState, config.GetSettingsValue<string>("Clone Practice State"));
-            keybinds.Add(SettingKeybind.InstrumentPracticeState, config.GetSettingsValue<string>("Instrument Hunt Practice State"));
+            keybinds.Add("ATP Practice State", "P+Digit1");
+            keybinds.Add("ATP Interior Practice State", "P+Digit2");
+            keybinds.Add("Bramble Practice State", "P+Digit3");
+            keybinds.Add("Ultimate Feldsparring Practice State", "P+Digit4");
+            keybinds.Add("Vessel Practice State", "P+Digit5");
+            keybinds.Add("Vessel Clip Practice State", "P+Digit6");
+            keybinds.Add("Clone Practice State", "P+Digit7");
+            keybinds.Add("Instrument Hunt Practice State", "P+Digit8");
 
-            keybinds.Add(SettingKeybind.CustomPracticeState1, config.GetSettingsValue<string>("Custom Practice State 1"));
-            keybinds.Add(SettingKeybind.CustomPracticeState2, config.GetSettingsValue<string>("Custom Practice State 2"));
-            keybinds.Add(SettingKeybind.CustomPracticeState3, config.GetSettingsValue<string>("Custom Practice State 3"));
+            keybinds.Add("Custom Practice State 1", "Slash+Digit1");
+            keybinds.Add("Custom Practice State 2", "Slash+Digit2");
+            keybinds.Add("Custom Practice State 3", "Slash+Digit3");
+            keybinds.ResetKeybindsToDefaultOnDuplicate();
 
             if (Locator.GetPlayerBody() == null) return;
             UpdateInvincibility();

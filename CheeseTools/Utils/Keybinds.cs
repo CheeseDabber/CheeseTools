@@ -5,52 +5,60 @@ using OWML.Common;
 using System.Linq;
 
 namespace CheeseTools.Utils {
-    public enum SettingKeybind {
-        ToggleSpacesuit,
-        ToggleSpeedup,
-        LogPlayerLocation,
-        TeleportShipToPlayer,
-        FastLoadNewExpedition,
-        EnterExitDreamWorld,
-        ATPPracticeState,
-        ATPInteriorPracticeState,
-        BramblePracticeState,
-        FeldsparringPracticeState,
-        VesselPracticeState,
-        VesselClipPracticeState,
-        ClonePracticeState,
-        InstrumentPracticeState,
-        CustomPracticeState1,
-        CustomPracticeState2,
-        CustomPracticeState3,
-    }
-
     public class Keybinds {
-        private Dictionary<SettingKeybind, Keybind> _keybinds = new Dictionary<SettingKeybind, Keybind>();
+        private Dictionary<string, Keybind> _keybinds = new Dictionary<string, Keybind>();
+        private Dictionary<string, string> _defaultKeybinds = new Dictionary<string, string>();
 
-        public void Add(SettingKeybind setting, string keysString) {
+        public void Add(string setting, string defaultKeysString) {
+            string keysString = CheeseTools.instance.ModHelper.Config.GetSettingsValue<string>(setting);
+            if (keysString == "") return;
+
             Keybind keybind = new Keybind();
             if (!keybind.Init(keysString)) {
-                CheeseTools.Console.WriteLine($"Invalid keybind for {Enum.GetName(setting.GetType(), setting)}. \"{keysString}\" is not recognized.", MessageType.Warning);
+                CheeseTools.Console.WriteLine($"Invalid keybind for {setting}. \"{keysString}\" is not recognized.", MessageType.Warning);
                 return;
             }
             _keybinds[setting] = keybind;
+            _defaultKeybinds[setting] = defaultKeysString;
         }
 
-        public void Remove(SettingKeybind setting) {
+        public void Remove(string setting) {
             _keybinds.Remove(setting);
         }
 
-        public Keybind Get(SettingKeybind setting) {
+        public Keybind Get(string setting) {
             return _keybinds.TryGetValue(setting, out var value) ? value : null;
         }
 
-        public Dictionary<SettingKeybind, Keybind> GetAll() {
+        public Dictionary<string, Keybind> GetAll() {
             return _keybinds;
         }
 
+        public void ResetKeybindsToDefaultOnDuplicate() {
+            List<string> keyStrings = new List<string>();
+            foreach (Keybind keybind in _keybinds.Values) {
+                List<string> keys = new List<string>();
+                foreach (Key key in keybind.GetKeys()) {
+                    keys.Add(key.ToString());
+                }
+                keys.Sort();
+                keyStrings.Add(string.Join("+", keys));
+            }
+
+            bool hasDuplicates = keyStrings.Count != new HashSet<string>(keyStrings).Count;
+            if (hasDuplicates) {
+                foreach (var (setting, keybind) in _keybinds) {
+                    string defaultKeysString = _defaultKeybinds[setting];
+                    CheeseTools.instance.ModHelper.Config.SetSettingsValue(setting, defaultKeysString);
+                    keybind.Init(defaultKeysString);
+                }
+                CheeseTools.Console.WriteLine("Found duplicate keybinds. Keybinds have been reset back to default.", MessageType.Warning);
+            }
+        }
+            
         public void Clear() {
             _keybinds.Clear();
+            _defaultKeybinds.Clear();
         }
     }
 
@@ -86,8 +94,8 @@ namespace CheeseTools.Utils {
             if (isPressed && !wasPressed) {
                 _wasPressed = true;
 
-                SettingKeybind setting = CheeseTools.keybinds.GetAll().First(x => x.Value == this).Key;
-                if (setting.ToString().Contains("PracticeState"))
+                string setting = CheeseTools.keybinds.GetAll().First(x => x.Value == this).Key;
+                if (setting.Contains("PracticeState"))
                     CheeseTools.instance.OnPracticeState();
             }
             if (!isPressed) {
@@ -95,6 +103,10 @@ namespace CheeseTools.Utils {
             }
 
             return isPressed && !wasPressed;
+        }
+
+        public HashSet<Key> GetKeys() {
+            return _keys;
         }
     }
 }
