@@ -1,5 +1,6 @@
 ﻿using CheeseTools.Utils;
 using HarmonyLib;
+using System.Globalization;
 using OWML.Common;
 using OWML.ModHelper;
 using OWML.Utils;
@@ -19,7 +20,7 @@ namespace CheeseTools {
         public static Action afterSleepUntil;
         public static double wakeUpTime = 0;
 
-        private static string version = "1.0.1";
+        private static string version = "1.0.2";
         private static ScreenPrompt watermark = new ScreenPrompt($"CheeseTools v{version}: Enabled");
         private static ScreenPrompt loopTimeText = new ScreenPrompt("");
         private static EyeState afterSceneLoadEyeState;
@@ -100,7 +101,6 @@ namespace CheeseTools {
                     PlayerData.ResetGame();
                     PlayerData.LearnLaunchCodes();
                     PlayerData.SaveLoopCount(3);
-                    Console.WriteLine("RESET GAME DATA");
                 }
             }
             else {
@@ -154,7 +154,7 @@ namespace CheeseTools {
             if (!PlayerData.IsLoaded() || LoadManager.IsBusy()) return;
 
             if (keybinds.Get(SettingKeybind.FastLoadNewExpedition)?.WasPressedThisFrame() == true) {
-                LoadSolarSystemScene(() => { });
+                LoadSolarSystemScene(null);
             }
             //Practice States
             else if (keybinds.Get(SettingKeybind.ATPPracticeState)?.WasPressedThisFrame() == true) {
@@ -670,9 +670,21 @@ namespace CheeseTools {
             GetMarker(label)?.DestroyMarker();
         }
 
-        public static Vector3 ConvertStringToVector3(string str) {
+        public static bool TryParseVector3(string str, out Vector3 result) {
+            result = Vector3.zero;
             string[] split = str.Split(',');
-            return split.Length == 3 && float.TryParse(split[0], out float x) && float.TryParse(split[1], out float y) && float.TryParse(split[2], out float z) ? new Vector3(x, y, z) : Vector3.zero;
+            if (split.Length != 3)
+                return false;
+
+            if (!float.TryParse(split[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x))
+                return false;
+            if (!float.TryParse(split[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y))
+                return false;
+            if (!float.TryParse(split[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float z))
+                return false;
+
+            result = new Vector3(x, y, z);
+            return true;
         }
 
         private bool IsTimerEnabled(string str) {
@@ -680,12 +692,18 @@ namespace CheeseTools {
         }
 
         private void CustomPracticeState(int num) {
+            if (!TryParseVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Position"), out Vector3 position)) {
+                Console.WriteLine($"Failed to start Custom Practice State {num}: Position is invalid.", MessageType.Error);
+                return;
+            }
+            if (!TryParseVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Rotation"), out Vector3 rotation)) {
+                Console.WriteLine($"Failed to start Custom Practice State {num}: Rotation is invalid.", MessageType.Error);
+                return;
+            }
+
             Action action = () => {
                 OWRigidbody relativeBody = RelativeBody.GetFromString(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Body"));
-                RelativeLocationData relativeLocation = new RelativeLocationData(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Position")),
-                    Quaternion.Euler(ConvertStringToVector3(ModHelper.Config.GetSettingsValue<string>($"Custom Practice State {num} Rotation"))),
-                    Vector3.zero
-                );
+                RelativeLocationData relativeLocation = new RelativeLocationData(position, Quaternion.Euler(rotation), Vector3.zero);
                 if (ModHelper.Config.GetSettingsValue<bool>($"Custom Practice State {num} Ship")) {
                     Vector3 relativePlayerPosToShipWhenSeated = new Vector3(0f, 0.34f, 4.22f);
                     relativeLocation.localPosition = relativeLocation.localPosition - relativePlayerPosToShipWhenSeated;
