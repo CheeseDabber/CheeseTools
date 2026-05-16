@@ -10,12 +10,25 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
+// v1.1.0:
+// - museum timer
+// - change observe timer
+// - fill in eye coordinates setting
+// - coordinates timer
+// - suitless spacesuit
+
+// - give warpcore
+// - give dream lantern
+// - solanum instrument hunt setting
+// - prisoner instrument hunt setting
+
 namespace CheeseTools {
     public class CheeseTools : ModBehaviour {
         public static CheeseTools instance;
         public static IModConsole Console => instance.ModHelper.Console;
         public static Keybinds keybinds = new Keybinds();
         public static Action afterSceneLoad;
+        public static bool skipWakeUpAnim = false;
         public static bool inPracticeState = false;
         public static Action afterSleepUntil;
         public static double wakeUpTime = 0;
@@ -27,6 +40,7 @@ namespace CheeseTools {
         private static NomaiWarpTransmitter atpWarpTransmitter => GameObject.Find("Prefab_NOM_WarpTransmitter (1)")?.GetComponent<NomaiWarpTransmitter>();
         private static NomaiWarpReceiver atpWarpReceiver => GameObject.Find("Interactibles_TimeLoopRing_Hidden/Prefab_NOM_WarpReceiver").GetComponent<NomaiWarpReceiver>();
 
+        private static ScreenTimer villageTimer = new ScreenTimer("Village Time: ");
         private static ScreenTimer atpEnterTimer = new ScreenTimer("ATP Enter Time: ");
         private static ScreenTimer atpInteriorTimer = new ScreenTimer("ATP Interior Time: ");
         private static ScreenTimer atpExitTimer = new ScreenTimer("ATP Exit Time: ");
@@ -54,6 +68,7 @@ namespace CheeseTools {
                 ModHelper.Events.Unity.FireOnNextUpdate(() => { OnCompleteSceneLoad(previousScene, newScene); });
             };
 
+            GlobalMessenger<bool>.AddListener("StartSleepingAtCampfire", OnStartSleepingAtCampfire);
             GlobalMessenger.AddListener("StopSleepingAtCampfire", OnStopSleepingAtCampfire);
             GlobalMessenger.AddListener("StartVesselWarp", OnStartVesselWarp);
             GlobalMessenger<EyeState>.AddListener("EyeStateChanged", OnEyeStateChanged);
@@ -112,9 +127,11 @@ namespace CheeseTools {
             UpdateInvincibility();
             if (afterSceneLoad != null) {
                 FixedUpdateDispatcher.FireAfterNFixedUpdates(() => {
-                    Locator.GetPlayerCamera().GetComponent<PlayerCameraEffectController>().OpenEyes(0f);
-                    var reticle = GameObject.FindObjectOfType<ReticleController>()._image;
-                    reticle.color = new Color(reticle.color.r, reticle.color.g, reticle.color.b, 1f);
+                    if (skipWakeUpAnim) {
+                        Locator.GetPlayerCamera().GetComponent<PlayerCameraEffectController>().OpenEyes(0f);
+                        var reticle = GameObject.FindObjectOfType<ReticleController>()._image;
+                        reticle.color = new Color(reticle.color.r, reticle.color.g, reticle.color.b, 1f);
+                    }
 
                     afterSceneLoad();
                     afterSceneLoad = null;
@@ -154,10 +171,27 @@ namespace CheeseTools {
             if (!PlayerData.IsLoaded() || LoadManager.IsBusy()) return;
 
             if (keybinds.Get("Fast Load New Expedition")?.WasPressedThisFrame() == true) {
-                LoadSolarSystemScene(null);
+                if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!")) {
+                    PlayerData.ResetGame();
+                    PlayerData.LearnLaunchCodes();
+                    PlayerData.SaveLoopCount(3);
+                }
+                LoadSolarSystemScene(() => { }, false);
             }
             //Practice States
+            else if (keybinds.Get("Village Practice State !RESETS SAVEFILE!")?.WasPressedThisFrame() == true) {
+                PlayerData.ResetGame();
+                LoadSolarSystemScene(() => {
+                    if (IsTimerEnabled("Village Timer")) {
+                        villageTimer.Start();
+                    }
+                }, false);
+            }
             else if (keybinds.Get("ATP Practice State")?.WasPressedThisFrame() == true) {
+                if (!PlayerData.KnowsLaunchCodes()) {
+                    PlayerData.LearnLaunchCodes();
+                    PlayerData.SaveLoopCount(3);
+                }
                 LoadSolarSystemScene(() => {
                     SleepUntil(ModHelper.Config.GetSettingsValue<double>("ATP Loop Time"), () => {
                         RelativeLocationData location = new RelativeLocationData(new Vector3(17.74f, -44.73f, 185.74f), Quaternion.Euler(new Vector3(294.14f, 63.13f, 124.75f)), Vector3.zero);
@@ -171,7 +205,7 @@ namespace CheeseTools {
                             atpEnterTimer.Start();
                         }
                     });
-                }, true);
+                });
             }
             else if (keybinds.Get("ATP Interior Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
@@ -185,6 +219,10 @@ namespace CheeseTools {
                 });
             }
             else if (keybinds.Get("Bramble Practice State")?.WasPressedThisFrame() == true) {
+                if (!PlayerData.KnowsLaunchCodes()) {
+                    PlayerData.LearnLaunchCodes();
+                    PlayerData.SaveLoopCount(3);
+                }
                 LoadSolarSystemScene(() => {
                     SleepUntil(490, () => {
                         Locator.GetPlayerSuit().SuitUp(false, true);
@@ -208,7 +246,7 @@ namespace CheeseTools {
                         var playerBody = Locator.GetPlayerBody();
                         playerBody.SetVelocity(GameObject.Find("TimeLoopRing_Body").GetAttachedOWRigidbody().GetVelocity() + playerBody.transform.forward * 5);
                     });
-                }, true);
+                });
             }
             else if (keybinds.Get("Ultimate Feldsparring Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
@@ -315,7 +353,8 @@ namespace CheeseTools {
                             probe.Launch(probeLauncher._launcherTransform, Vector3.zero);
                             Teleportation.TeleportBodyTo(probe.GetOWRigidbody(), GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(-65f, 1f, 5999f), Quaternion.Euler(90f, 0f, 0f), Vector3.zero));
                         });
-                    } else {
+                    }
+                    else {
                         playerOrientation = Quaternion.Euler(0f, 95f, 0f);
                         Locator.GetToolModeSwapper().EquipToolMode(ToolMode.SignalScope);
                     }
@@ -387,14 +426,15 @@ namespace CheeseTools {
             keybinds.Add("Enter/Exit DreamWorld", "Slash+I");
             keybinds.Add("Log Player Location", "Slash+O");
 
-            keybinds.Add("ATP Practice State", "P+Digit1");
-            keybinds.Add("ATP Interior Practice State", "P+Digit2");
-            keybinds.Add("Bramble Practice State", "P+Digit3");
-            keybinds.Add("Ultimate Feldsparring Practice State", "P+Digit4");
-            keybinds.Add("Vessel Practice State", "P+Digit5");
-            keybinds.Add("Vessel Clip Practice State", "P+Digit6");
-            keybinds.Add("Clone Practice State", "P+Digit7");
-            keybinds.Add("Instrument Hunt Practice State", "P+Digit8");
+            keybinds.Add("Village Practice State !RESETS SAVEFILE!", "P+Digit1");
+            keybinds.Add("ATP Practice State", "P+Digit2");
+            keybinds.Add("ATP Interior Practice State", "P+Digit3");
+            keybinds.Add("Bramble Practice State", "P+Digit4");
+            keybinds.Add("Ultimate Feldsparring Practice State", "P+Digit5");
+            keybinds.Add("Vessel Practice State", "P+Digit6");
+            keybinds.Add("Vessel Clip Practice State", "P+Digit7");
+            keybinds.Add("Clone Practice State", "P+Digit8");
+            keybinds.Add("Instrument Hunt Practice State", "P+Digit9");
 
             keybinds.Add("Custom Practice State 1", "Slash+Digit1");
             keybinds.Add("Custom Practice State 2", "Slash+Digit2");
@@ -471,6 +511,10 @@ namespace CheeseTools {
             if (ModHelper.Config.GetSettingsValue<bool>("Show Sectors")) {
                 RemoveScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
             }
+        }
+
+        public void OnStartSleepingAtCampfire(bool isDreamCampfire) {
+            villageTimer.Stop();
         }
 
         public void OnStopSleepingAtCampfire() {
@@ -552,22 +596,13 @@ namespace CheeseTools {
             afterSceneLoad();
         }
 
-        public static void LoadSolarSystemScene(Action afterSceneLoad, bool launchCodes = false) {
-            bool resetSave = instance.ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!");
-            if (launchCodes || resetSave) {
-                if (resetSave) {
-                    PlayerData.ResetGame();
-                }
-                if (!PlayerData.KnowsLaunchCodes()) {
-                    PlayerData.LearnLaunchCodes();
-                    PlayerData.SaveLoopCount(3);
-                }
-            }
+        public static void LoadSolarSystemScene(Action afterSceneLoad, bool skipWakeUpAnim = true) {
             PlayerData._currentGameSave.warpedToTheEye = false;
             PlayerData.SaveCurrentGame();
 
             LoadManager.LoadScene(OWScene.SolarSystem);
             CheeseTools.afterSceneLoad = afterSceneLoad;
+            CheeseTools.skipWakeUpAnim = skipWakeUpAnim;
         }
 
         public static void LoadEyeScene(EyeState eyeState, Action afterSceneLoad) {
@@ -723,9 +758,13 @@ namespace CheeseTools {
 
             var loopTime = ModHelper.Config.GetSettingsValue<double>($"Custom Practice State {num} Loop Time");
             if (LoadManager.GetCurrentScene() != OWScene.SolarSystem || loopTime > 0) {
+                if (loopTime > 0 && !PlayerData.KnowsLaunchCodes()) {
+                    PlayerData.LearnLaunchCodes();
+                    PlayerData.SaveLoopCount(3);
+                }
                 LoadSolarSystemScene(() => {
                     SleepUntil(loopTime, action);
-                }, loopTime > 0 || ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!"));
+                });
             } else {
                 action();
             }

@@ -18,7 +18,7 @@ namespace CheeseTools {
         [HarmonyPrefix]
         [HarmonyPatch(typeof(InputManager), nameof(InputManager.OnStartOfTimeLoop))]
         public static bool InputManager_OnStartOfTimeLoop(InputManager __instance) {
-            if (CheeseTools.afterSceneLoad != null) {
+            if (CheeseTools.afterSceneLoad != null && CheeseTools.skipWakeUpAnim) {
                 __instance.ChangeInputMode(InputMode.Character);
                 __instance._inputFadeFraction = 1f;
                 GlobalMessenger.FireEvent("TakeFirstFlashbackSnapshot");
@@ -89,7 +89,7 @@ namespace CheeseTools {
         [HarmonyPrefix]
         [HarmonyPatch(typeof(PlayerBreathingAudio), nameof(PlayerBreathingAudio.OnWakeUp))]
         public static bool PlayerBreathingAudio_OnWakeUp() {
-            return CheeseTools.afterSceneLoad == null;
+            return CheeseTools.afterSceneLoad == null || !CheeseTools.skipWakeUpAnim;
         }
         [HarmonyPrefix]
         [HarmonyPatch(typeof(Campfire), nameof(Campfire.Update))]

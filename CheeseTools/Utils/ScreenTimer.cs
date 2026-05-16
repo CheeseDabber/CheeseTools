@@ -25,6 +25,10 @@ namespace CheeseTools.Utils {
             if (!isRunning || OWTime.IsPaused()) return;
             _elapsed += Time.deltaTime;
 
+            if (!Locator.GetPromptManager().GetScreenPromptList(PromptPosition.LowerLeft).Contains(_screenPrompt)) {
+                Locator.GetPromptManager().AddScreenPrompt(_screenPrompt, PromptPosition.LowerLeft, true);
+            }
+
             TimeSpan time = TimeSpan.FromSeconds(_elapsed);
             string formattedTime = time.Minutes >= 1 ? time.ToString(@"m\:ss\.ff") : time.ToString(@"ss\.ff");
             _screenPrompt.SetText($"{prefix}[{formattedTime}]");
@@ -33,10 +37,6 @@ namespace CheeseTools.Utils {
         public void Start() {
             _elapsed = 0f;
             isRunning = true;
-
-            if (!Locator.GetPromptManager().GetScreenPromptList(PromptPosition.LowerLeft).Contains(_screenPrompt)) {
-                Locator.GetPromptManager().AddScreenPrompt(_screenPrompt, PromptPosition.LowerLeft, true);
-            }
             ScreenTimerController.Register(this);
         }
 
@@ -73,9 +73,14 @@ namespace CheeseTools.Utils {
 
         public static void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene) {
             for (int i = _screenTimers.Count - 1; i >= 0; i--) {
-                _screenTimers[i].Stop();
+                ScreenTimer screenTimer = _screenTimers[i];
+                if (screenTimer.prefix == "Village Time: " && newScene == OWScene.SolarSystem && CheeseTools.afterSceneLoad == null) {
+                    Console.Write("Continued village timer");
+                    continue;
+                }
+
+                screenTimer.Stop();
             }
-            _screenTimers.Clear();
         }
 
         public static void Register(ScreenTimer screenTimer) {

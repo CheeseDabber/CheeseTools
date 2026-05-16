@@ -35,40 +35,44 @@
     // Practice States
     " ": { "type": "separator" },
     "  ": { "type": "separator" },
-    "ATP Practice State": "P+Digit1",
+    "Village Practice State !RESETS SAVEFILE!": "P+Digit1",
+    "Village Timer": false,
+
+    "   ": { "type": "separator" },
+    "ATP Practice State": "P+Digit2",
     "ATP Loop Time": 441,
-    "ATP Interior Practice State": "P+Digit2",
+    "ATP Interior Practice State": "P+Digit3",
     "ATP Enter Timer": false,
     "ATP Interior Timer": false,
     "ATP Exit Timer": false,
 
-    "   ": { "type": "separator" },
-    "Bramble Practice State": "P+Digit3",
-    "Ultimate Feldsparring Practice State": "P+Digit4",
+    "    ": { "type": "separator" },
+    "Bramble Practice State": "P+Digit4",
+    "Ultimate Feldsparring Practice State": "P+Digit5",
     "Ultimate Feldsparring Ship Speed": 1100,
     "Bramble Timer": false,
     "Ultimate Feldsparring Timer": false,
 
-    "    ": { "type": "separator" },
-    "Vessel Practice State": "P+Digit5",
-    "Vessel Clip Practice State": "P+Digit6",
+    "     ": { "type": "separator" },
+    "Vessel Practice State": "P+Digit6",
+    "Vessel Clip Practice State": "P+Digit7",
     "Warp Timer": false,
     "Observe Timer": false,
 
-    "     ": { "type": "separator" },
-    "Clone Practice State": "P+Digit7",
+    "      ": { "type": "separator" },
+    "Clone Practice State": "P+Digit8",
     "Clone Timer": false,
     "Clone Trees Locator": false,
 
-    "      ": { "type": "separator" },
-    "Instrument Hunt Practice State": "P+Digit8",
+    "       ": { "type": "separator" },
+    "Instrument Hunt Practice State": "P+Digit9",
     "Cloneboosting Setup": false,
     "Instrument Hunt Timer": false,
     "Predict Instrument Hunt Time": false,
 
     // Custom Practice States
-    "       ": { "type": "separator" },
     "        ": { "type": "separator" },
+    "         ": { "type": "separator" },
     "Custom Practice State 1": "Slash+Digit1",
     "Custom Practice State 1 Body": {
       "type": "selector",
@@ -104,7 +108,7 @@
     "Custom Practice State 1 Spacesuit": false,
     "Custom Practice State 1 Ship": false,
 
-    "         ": { "type": "separator" },
+    "          ": { "type": "separator" },
     "Custom Practice State 2": "Slash+Digit2",
     "Custom Practice State 2 Body": {
       "type": "selector",
@@ -140,7 +144,7 @@
     "Custom Practice State 2 Spacesuit": false,
     "Custom Practice State 2 Ship": false,
 
-    "          ": { "type": "separator" },
+    "           ": { "type": "separator" },
     "Custom Practice State 3": "Slash+Digit3",
     "Custom Practice State 3 Body": {
       "type": "selector",

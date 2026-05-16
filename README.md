@@ -4,7 +4,7 @@
 CheeseTools is a mod for practicing Outer Wilds speedrunning.
 
 I want to thank [SpeedTools](https://github.com/GrimLala/SpeedTools), the first speedrunning mod, for all the inspiration.
-SpeedTools has been an absolute vital tool in the speedrunning scene but unfortunately the mod has been mostly abandoned and lately more and more things have started breaking. I felt a new speedrunning mod was overdue which is why I decided to make CheeseTools.
+SpeedTools has been an absolute vital tool in the speedrunning scene but unfortunately the mod has been mostly abandoned and lately more and more things have started breaking. Many felt a new speedrunning mod was needed which is why I decided to make CheeseTools.
 
 ## Features
 ### Settings
@@ -32,31 +32,35 @@ Keybinds in this mod work as text with a `+` separating each key. To edit keybin
 
 ### Practice States
 Practice states are the main feature of this mod and provide a way to practice specific parts of a speedrun. There are 8 pre-made ones specifically for practicing any%. While practicing I find it important to be able to quickly try again which is why I have made it so starting a practice state automatically loads the scene. No need to quit back to the titlescreen and start a new expedition yourself. You can start any practice state from anywhere at anytime.
+### Village
+**Village Practice State:** `P + 1`  
+**Village Timer:** Starts when waking up. Ends when sleeping at campfire.
+
 ### ATP
-**ATP Practice State:** `P + 1`  
+**ATP Practice State:** `P + 2`  
 **ATP Loop Time:** The time the practice state starts.  
 _Note: This should not be equal to your ATP sleep time as in a run the loop starts before you reach the campfire. Do a test run with Show Loop Time enabled to see what your loop time should be._  
-**ATP Interior Practice State Keybind:** `P + 2`  
+**ATP Interior Practice State Keybind:** `P + 3`  
 **ATP Enter Timer**: Starts when waking up. Ends when entering ATP.  
 **ATP Interior Timer**: Starts when entering ATP. Ends when leaving ATP.  
 **ATP Exit Timer**: Starts when waking up. Ends when leaving ATP.  
 ### Bramble
-**Bramble Practice State:** `P + 3`  
-**Ultimate Feldsparring Practice State:** `P + 4`  
+**Bramble Practice State:** `P + 4`  
+**Ultimate Feldsparring Practice State:** `P + 5`  
 **Ultimate Feldsparring Ship Speed:** Ship initial forward velocity.  
 **Bramble Timer:** Starts when leaving ATP. Ends when entering the vessel node.  
 **Ultimate Feldsparring Timer:** Starts when entering the anglernest dimension. Ends when entering the vessel node.   
 ### Vessel
-**Vessel Practice State:** `P + 5`  
-**Vessel Clip Practice State:** `P + 6`  
+**Vessel Practice State:** `P + 6`  
+**Vessel Clip Practice State:** `P + 7`  
 **Warp Timer:** Starts when entering the vessel node. Ends when warping.  
 **Observer Timer:** Starts upon having warped to the eye. Ends when observing.  
 ### Clone
-**Clone Practice State:** `P + 7`  
+**Clone Practice State:** `P + 8`  
 **Clone Trees Locator:** Marks standing spot between the three trees.  
 **Clone Timer:** Starts when observing. Ends when you hit the clone.
 ### Instrument Hunt
-**Instrument Hunt Practice State:** `P + 8`  
+**Instrument Hunt Practice State:** `P + 9`  
 **Cloneboosting Setup:** Puts the scout down at the exact opposite direction of where the clone will spawn. The idea is that after flicking away the trees you look at the scout and then start scoutboosting until you hit the clone.  
 **Instrument Hunt Timer:** Starts when touching the clone. Ends when dying to the big bang.   
 **Predict Instrument Hunt Time:** After talking to all the travelers it gives an estimate to when you will die to the big bang. Scout boosting to big bang is considered but because of this the estimation is never perfect.
