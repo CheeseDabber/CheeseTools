@@ -96,7 +96,7 @@ namespace CheeseTools.Utils {
 
                 string setting = CheeseTools.keybinds.GetAll().First(x => x.Value == this).Key;
                 if (setting.Contains("Practice State"))
-                    CheeseTools.instance.OnPracticeState();
+                    CheeseTools.instance.OnPracticeState(setting);
             }
             if (!isPressed) {
                 _wasPressed = false;

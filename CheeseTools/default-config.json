@@ -57,7 +57,9 @@
     "Vessel Practice State": "P+Digit6",
     "Vessel Clip Practice State": "P+Digit7",
     "Warp Timer": false,
+    "Museum Timer": false,
     "Observe Timer": false,
+    "Museum+Observe Timer": false,
 
     "      ": { "type": "separator" },
     "Clone Practice State": "P+Digit8",

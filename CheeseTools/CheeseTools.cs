@@ -11,8 +11,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // v1.1.0:
-// - museum timer
-// - change observe timer
 // - fill in eye coordinates setting
 // - coordinates timer
 // - suitless spacesuit
@@ -29,7 +27,7 @@ namespace CheeseTools {
         public static Keybinds keybinds = new Keybinds();
         public static Action afterSceneLoad;
         public static bool skipWakeUpAnim = false;
-        public static bool inPracticeState = false;
+        public static string currentPracticeState = "";
         public static Action afterSleepUntil;
         public static double wakeUpTime = 0;
 
@@ -47,7 +45,9 @@ namespace CheeseTools {
         private static ScreenTimer brambleTimer = new ScreenTimer("Bramble Timer: ");
         private static ScreenTimer feldsparringTimer = new ScreenTimer("Feldsparring Time: ");
         private static ScreenTimer warpTimer = new ScreenTimer("Warp Time: ");
+        private static ScreenTimer museumTimer = new ScreenTimer("Museum Time: ");
         private static ScreenTimer observeTimer = new ScreenTimer("Observe Time: ");
+        private static ScreenTimer museumObserveTimer = new ScreenTimer("Museum+Observe Time: ");
         private static ScreenTimer cloneTimer = new ScreenTimer("Clone Time: ");
         public static ScreenTimer instrumentTimer = new ScreenTimer("Instrument Hunt Time: ");
 
@@ -103,15 +103,18 @@ namespace CheeseTools {
 
             }
             if (newScene == OWScene.EyeOfTheUniverse) {
-                if (IsTimerEnabled("Observe Timer") && Locator.GetEyeStateManager().GetState() == EyeState.AboardVessel) {
-                    observeTimer.Start();
+                if (Locator.GetEyeStateManager().GetState() == EyeState.AboardVessel && currentPracticeState != "Clone Practice State") {
+                    if (IsTimerEnabled("Museum Timer"))
+                        museumTimer.Start();
+                    if (IsTimerEnabled("Museum+Observe Timer"))
+                        museumObserveTimer.Start();
                 }
             }
             else {
 
             }
             if (newScene == OWScene.TitleScreen) {
-                inPracticeState = false;
+                currentPracticeState = "";
                 if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!") && (previousScene == OWScene.SolarSystem || previousScene == OWScene.EyeOfTheUniverse)) {
                     PlayerData.ResetGame();
                     PlayerData.LearnLaunchCodes();
@@ -171,6 +174,7 @@ namespace CheeseTools {
             if (!PlayerData.IsLoaded() || LoadManager.IsBusy()) return;
 
             if (keybinds.Get("Fast Load New Expedition")?.WasPressedThisFrame() == true) {
+                currentPracticeState = "";
                 if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!")) {
                     PlayerData.ResetGame();
                     PlayerData.LearnLaunchCodes();
@@ -446,8 +450,8 @@ namespace CheeseTools {
             UpdateSectorText();
         }
 
-        public void OnPracticeState() {
-            inPracticeState = true;
+        public void OnPracticeState(string practiceState) {
+            currentPracticeState = practiceState;
         }
 
         public void OnStartVesselWarp() {
@@ -463,12 +467,19 @@ namespace CheeseTools {
                 cloneTimer.Stop();
                 RemoveMarker("Trees Location");
             }
+            if (state == EyeState.Observatory) {
+                museumTimer.Stop();
+                if (IsTimerEnabled("Observe Timer")) {
+                    observeTimer.Start();
+                }
+            }
             if (state == EyeState.ZoomOut) {
                 observeTimer.Stop();
+                museumObserveTimer.Stop();
                 if (IsTimerEnabled("Clone Timer")) {
                     cloneTimer.Start();
                 }
-                if (inPracticeState && ModHelper.Config.GetSettingsValue<bool>("Clone Trees Locator")) {
+                if (currentPracticeState != "" && ModHelper.Config.GetSettingsValue<bool>("Clone Trees Locator")) {
                     CanvasMarker marker = GetOrCreateMarker("Trees Location", GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody(), new Vector3(-54.48f, 1.00f, 5999.10f));
                     marker.SetVisibility(true);
                 }
@@ -724,7 +735,7 @@ namespace CheeseTools {
         }
 
         private bool IsTimerEnabled(string str) {
-            return inPracticeState && ModHelper.Config.GetSettingsValue<bool>(str);
+            return currentPracticeState != "" && ModHelper.Config.GetSettingsValue<bool>(str);
         }
 
         private void CustomPracticeState(int num) {
