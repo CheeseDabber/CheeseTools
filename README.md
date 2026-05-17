@@ -15,6 +15,7 @@ SpeedTools has been an absolute vital tool in the speedrunning scene but unfortu
 **Create Launch Codes Save:** When enabled upon quitting to main menu it overwrites your current save with one where the loop has started (substitute for the autosplitter "Auto delete progression while keeping Launch Codes" setting).  
 **Show Loop Time:** Shows the loop time.  
 **Mark Stranger:** Marks the location of the stranger.  
+**Suitless Practice States:** Makes all practice states suitless.  
 **Show Sectors:** Shows current loaded sectors.  
 **Enter Dreamworld Campfire:** Choose dreamworld enter campfire.  
 
@@ -29,46 +30,56 @@ Keybinds in this mod work as text with a `+` separating each key. To edit keybin
 `/ + U` | Toggle Speedup
 `/ + I` | Enter/Exit Dreamworld
 `/ + O` | Log Player Location
+`I + 1` | Give Warp Core
+`I + 2` | Give Dream Lantern
 
 ### Practice States
-Practice states are the main feature of this mod and provide a way to practice specific parts of a speedrun. There are 8 pre-made ones specifically for practicing any%. While practicing I find it important to be able to quickly try again which is why I have made it so starting a practice state automatically loads the scene. No need to quit back to the titlescreen and start a new expedition yourself. You can start any practice state from anywhere at anytime.
+Practice states are the main feature of this mod and provide a way to practice specific parts of a speedrun. There are 9 pre-made ones specifically for practicing any%. While practicing I find it important to be able to quickly try again which is why I have made it so starting a practice state automatically loads the scene. No need to quit back to the titlescreen and start a new expedition yourself. You can start any practice state from anywhere at anytime.
 ### Village
 **Village Practice State:** `P + 1`  
-**Village Timer:** Starts when waking up. Ends when sleeping at campfire.
+**Village Timer:** Starts when waking up. Stops when sleeping at campfire.
 
 ### ATP
 **ATP Practice State:** `P + 2`  
 **ATP Loop Time:** The time the practice state starts.  
 _Note: This should not be equal to your ATP sleep time as in a run the loop starts before you reach the campfire. Do a test run with Show Loop Time enabled to see what your loop time should be._  
 **ATP Interior Practice State Keybind:** `P + 3`  
-**ATP Enter Timer**: Starts when waking up. Ends when entering ATP.  
-**ATP Interior Timer**: Starts when entering ATP. Ends when leaving ATP.  
-**ATP Exit Timer**: Starts when waking up. Ends when leaving ATP.  
+**ATP Enter Timer**: Starts when waking up. Stops when entering ATP.  
+**ATP Interior Timer**: Starts when entering ATP. Stops when leaving ATP.  
+**ATP Exit Timer**: Starts when waking up. Stops when leaving ATP.  
 ### Bramble
 **Bramble Practice State:** `P + 4`  
 **Ultimate Feldsparring Practice State:** `P + 5`  
 **Ultimate Feldsparring Ship Speed:** Ship initial forward velocity.  
-**Bramble Timer:** Starts when leaving ATP. Ends when entering the vessel node.  
-**Ultimate Feldsparring Timer:** Starts when entering the anglernest dimension. Ends when entering the vessel node.   
+**Bramble Timer:** Starts when leaving ATP. Stops when entering the vessel node.  
+**Ultimate Feldsparring Timer:** Starts when entering the anglernest dimension. Stops when entering the vessel node.   
 ### Vessel
 **Vessel Practice State:** `P + 6`  
+**Warp Timer:** Starts when entering the vessel node. Stops when warping.  
+### Vessel Clip
 **Vessel Clip Practice State:** `P + 7`  
-**Warp Timer:** Starts when entering the vessel node. Ends when warping.  
-**Observer Timer:** Starts upon having warped to the eye. Ends when observing.  
+**Fill In Eye Coordinates:** Fills in eye coordinates.  
+**Coordinates Timer:** Starts when dragging the coordinate orb. Stops when putting the orb in lower pillar activation slot.  
+**Museum Timer:** Starts upon having warped to the eye. Stops upon being teleported to the museum.  
+**Observe Timer:** Starts upon being teleported to the museum. Stops when observing.  
+**Museum+Observe Timer:** Starts upon having warped to the eye. Stops when observing.  
 ### Clone
 **Clone Practice State:** `P + 8`  
 **Clone Trees Locator:** Marks standing spot between the three trees.  
-**Clone Timer:** Starts when observing. Ends when you hit the clone.
+**Clone Timer:** Starts when observing. Stops when you hit the clone.
 ### Instrument Hunt
 **Instrument Hunt Practice State:** `P + 9`  
 **Cloneboosting Setup:** Puts the scout down at the exact opposite direction of where the clone will spawn. The idea is that after flicking away the trees you look at the scout and then start scoutboosting until you hit the clone.  
-**Instrument Hunt Timer:** Starts when touching the clone. Ends when dying to the big bang.   
+**Solanum:** Adds Solanum to the instrument hunt.  
+**Prisoner:** Adds Prisoner to the instrument hunt.  
+**Menu Storage:** Triggers the same spawn conditions when doing menu storage  
+**Instrument Hunt Timer:** Starts when touching the clone. Stops when dying to the big bang.   
 **Predict Instrument Hunt Time:** After talking to all the travelers it gives an estimate to when you will die to the big bang. Scout boosting to big bang is considered but because of this the estimation is never perfect.
 
 ### Custom Practice States
-You can create your own practice states using Custom Practice States. There are 3 Custom Practice States provided which you can edit in the mod config. You can use the Log Player Location keybind to get the location of the player.
+You can create your own practice states using Custom Practice States. There are 10 Custom Practice States provided which you can edit in the mod config. You can use the Log Player Location keybind to get the location of the player.
 
-**Custom Practice States Keybinds:** `/ + 1`, `/ + 2`, `/ + 3`  
+**Custom Practice States Keybinds:** `/ + [0-9]`  
 **Custom Practice State Body:** The body the location is relative to.  
 **Custom Practice State Position:** The relative position.  
 **Custom Practice State Rotation:** The relative rotation.  

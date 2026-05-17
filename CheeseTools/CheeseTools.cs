@@ -10,12 +10,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
-// v1.1.0:
-// - give warpcore
-// - give dream lantern
-// - solanum instrument hunt setting
-// - prisoner instrument hunt setting
-
 namespace CheeseTools {
     public class CheeseTools : ModBehaviour {
         public static CheeseTools instance;
@@ -353,6 +347,10 @@ namespace CheeseTools {
                     return;
                 }
 
+                PlayerData.SetPersistentCondition("MET_SOLANUM", ModHelper.Config.GetSettingsValue<bool>("Solanum"));
+                if (EntitlementsManager.IsDlcOwned() == EntitlementsManager.AsyncOwnershipStatus.Owned)
+                    PlayerData.SetPersistentCondition("MET_PRISONER", ModHelper.Config.GetSettingsValue<bool>("Prisoner"));
+
                 LoadEyeScene(EyeState.ForestIsDark, () => {
                     Locator.GetPlayerSuit().SuitUp(false, true);
                     Locator.GetFlashlight().TurnOn();
@@ -441,6 +439,9 @@ namespace CheeseTools {
             else if (keybinds.Get("Teleport Ship To Player")?.WasPressedThisFrame() == true) {
                 Teleportation.TeleportShipToPlayer();
             }
+            else if (keybinds.Get("Give Warp Core")?.WasPressedThisFrame() == true) {
+                Items.PickUpItem(Items.GetWarpCore());
+            }
 
             if (EntitlementsManager.IsDlcOwned() != EntitlementsManager.AsyncOwnershipStatus.Owned) return;
 
@@ -451,6 +452,9 @@ namespace CheeseTools {
                 else {
                     DreamWorldUtil.ExitDreamWorld();
                 }
+            }
+            else if (keybinds.Get("Give Dream Lantern")?.WasPressedThisFrame() == true) {
+                Items.PickUpItem(Items.GetDreamLantern());
             }
         }
 
@@ -466,6 +470,8 @@ namespace CheeseTools {
             keybinds.Add("Toggle Speedup", "Slash+U");
             keybinds.Add("Enter/Exit DreamWorld", "Slash+I");
             keybinds.Add("Log Player Location", "Slash+O");
+            keybinds.Add("Give Warp Core", "I+Digit1");
+            keybinds.Add("Give Dream Lantern", "I+Digit2");
 
             keybinds.Add("Village Practice State !RESETS SAVEFILE!", "P+Digit1");
             keybinds.Add("ATP Practice State", "P+Digit2");
