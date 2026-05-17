@@ -10,6 +10,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
+// Bugs:
+// - inputfade not always resetting on scene loads
+
 namespace CheeseTools {
     public class CheeseTools : ModBehaviour {
         public static CheeseTools instance;
@@ -137,7 +140,7 @@ namespace CheeseTools {
                     afterSceneLoad = null;
 
                     if (currentPracticeState != "" && ModHelper.Config.GetSettingsValue<bool>("Suitless Practice States")) {
-                        Locator.GetPlayerSuit().RemoveSuit(true);
+                        RemoveSpacesuit(true);
                     }
                 }, 2);
             }
@@ -199,9 +202,9 @@ namespace CheeseTools {
                 }
                 LoadSolarSystemScene(() => {
                     SleepUntil(ModHelper.Config.GetSettingsValue<double>("ATP Loop Time"), () => {
+                        EquipSpacesuit(true);
                         RelativeLocationData location = new RelativeLocationData(new Vector3(17.74f, -44.73f, 185.74f), Quaternion.Euler(new Vector3(294.14f, 63.13f, 124.75f)), Vector3.zero);
                         Teleportation.TeleportPlayerTo(Locator.GetAstroObject(AstroObject.Name.TimberHearth).GetOWRigidbody(), location);
-                        Locator.GetPlayerSuit().SuitUp(false, true);
 
                         if (IsTimerEnabled("ATP Exit Timer")) {
                             atpExitTimer.Start();
@@ -214,7 +217,7 @@ namespace CheeseTools {
             }
             else if (keybinds.Get("ATP Interior Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
-                    Locator.GetPlayerSuit().SuitUp(false, true);
+                    EquipSpacesuit(true);
                     var sandSphere = GameObject.Find("SandSphere_Draining");
                     sandSphere.GetComponent<SandLevelController>().enabled = false;
                     sandSphere.transform.localScale = Vector3.zero;
@@ -230,7 +233,7 @@ namespace CheeseTools {
                 }
                 LoadSolarSystemScene(() => {
                     SleepUntil(490, () => {
-                        Locator.GetPlayerSuit().SuitUp(false, true);
+                        EquipSpacesuit(true);
                         Items.PickUpItem(Items.GetWarpCore());
                         Locator.GetToolModeSwapper().EquipToolMode(ToolMode.Probe);
 
@@ -255,7 +258,7 @@ namespace CheeseTools {
             }
             else if (keybinds.Get("Ultimate Feldsparring Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
-                    Locator.GetPlayerSuit().SuitUp(false, true);
+                    EquipSpacesuit(true);
                     RepairShip();
                     OWRigidbody ship = Locator.GetShipBody();
                     RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(508.07f, 84.54f, -3248.96f), Quaternion.Euler(new Vector3(0.94f, 350.39f, 265.78f)), Vector3.zero);
@@ -267,7 +270,7 @@ namespace CheeseTools {
             }
             else if (keybinds.Get("Vessel Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
-                    Locator.GetPlayerSuit().SuitUp(false, true);
+                    EquipSpacesuit(true);
                     RepairShip();
                     OWRigidbody ship = Locator.GetShipBody();
                     RelativeLocationData shipLocation = new RelativeLocationData(new Vector3(-11.94f, -284.85f, -138.69f), Quaternion.Euler(9.78f, 104.03f, 296.32f), Vector3.zero);
@@ -279,7 +282,7 @@ namespace CheeseTools {
             }
             else if (keybinds.Get("Vessel Clip Practice State")?.WasPressedThisFrame() == true) {
                 LoadSolarSystemScene(() => {
-                    Locator.GetPlayerSuit().SuitUp(false, true);
+                    EquipSpacesuit(true);
                     Teleportation.TeleportPlayerTo(GameObject.Find("DB_VesselDimension_Body").GetAttachedOWRigidbody(), new RelativeLocationData(new Vector3(175.66f, 13.39f, -19.34f), Quaternion.Euler(353.87f, 95.65f, 12.28f), Vector3.zero));
 
                     VesselWarpController warpController = GameObject.Find("WarpController").GetComponent<VesselWarpController>();
@@ -334,7 +337,7 @@ namespace CheeseTools {
             }
             else if (keybinds.Get("Clone Practice State")?.WasPressedThisFrame() == true) {
                 LoadEyeScene(EyeState.AboardVessel, () => {
-                    Locator.GetPlayerSuit().SuitUp(false, true);
+                    EquipSpacesuit(true);
                     OWRigidbody eyeBody = GameObject.Find("EyeOfTheUniverse_Body").GetAttachedOWRigidbody();
                     Teleportation.TeleportPlayerTo(eyeBody, new RelativeLocationData(new Vector3(-80.616f, -3905.84f, 180.686f), Quaternion.identity, Vector3.zero));
                 });
@@ -352,7 +355,7 @@ namespace CheeseTools {
                     PlayerData.SetPersistentCondition("MET_PRISONER", ModHelper.Config.GetSettingsValue<bool>("Prisoner"));
 
                 LoadEyeScene(EyeState.ForestIsDark, () => {
-                    Locator.GetPlayerSuit().SuitUp(false, true);
+                    EquipSpacesuit(true);
                     Locator.GetFlashlight().TurnOn();
                     Locator.GetToolModeSwapper().GetSignalScope()._targetFOV = 60f;
                     NotificationManager.SharedInstance.ClearAllNotifications();
@@ -423,11 +426,10 @@ namespace CheeseTools {
             if (Locator.GetPlayerBody() == null) return;
 
             if (keybinds.Get("Toggle Spacesuit")?.WasPressedThisFrame() == true) {
-                PlayerSpacesuit spacesuit = Locator.GetPlayerSuit();
-                if (!spacesuit.IsWearingSuit())
-                    spacesuit.SuitUp();
+                if (!Locator.GetPlayerSuit().IsWearingSuit())
+                    EquipSpacesuit(false);
                 else
-                    spacesuit.RemoveSuit();
+                    RemoveSpacesuit(false);
             }
             else if (keybinds.Get("Toggle Speedup")?.WasPressedThisFrame() == true) {
                 ToggleSpeedUp();
@@ -625,6 +627,16 @@ namespace CheeseTools {
             }
         }
 
+        public static void EquipSpacesuit(bool instant) {
+            Locator.GetPlayerSuit().SuitUp(false, instant);
+            if (!instant) return;
+            Locator.GetPlayerTransform().GetComponent<PlayerResources>()._jetpackThruster.DebugResetBoostCharge();
+        }
+
+        public static void RemoveSpacesuit(bool instant) {
+            Locator.GetPlayerSuit().RemoveSuit(instant);
+        }
+
         public static void LoadSector(Sector sector) {
             if (sector != null && !sector.GetOccupants().Contains(Locator.GetPlayerSectorDetector())) {
                 sector.AddOccupant(Locator.GetPlayerSectorDetector());
@@ -812,9 +824,9 @@ namespace CheeseTools {
                 }
 
                 if (ModHelper.Config.GetSettingsValue<bool>($"Custom Practice State {num} Spacesuit"))
-                    Locator.GetPlayerSuit().SuitUp(false, true);
+                    EquipSpacesuit(true);
                 else
-                    Locator.GetPlayerSuit().RemoveSuit(true);
+                    RemoveSpacesuit(true);
             };
 
             var loopTime = ModHelper.Config.GetSettingsValue<double>($"Custom Practice State {num} Loop Time");

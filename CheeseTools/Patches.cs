@@ -202,6 +202,15 @@ namespace CheeseTools {
             }
             return false;
         }
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(JetpackThrusterModel), nameof(JetpackThrusterModel.OnBreakAlignment))]
+        public static bool JetpackThrusterModel_OnBreakAlignment(JetpackThrusterModel __instance) {
+            __instance._manualAngularVelocity = Vector3.zero;
+            __instance._boostActivated = false;
+            //__instance._boostChargeFraction = 0f; commented out this line cause its useless and it was messing up my insta boost fill on equipspacesuit
+            RumbleManager.StopJetpackBoost();
+            return false;
+        }
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(CosmicInflationController), nameof(CosmicInflationController.UpdateFormation))]
@@ -214,7 +223,6 @@ namespace CheeseTools {
                 CheeseTools.AddScreenText($"Predicted Instrument Hunt Time: [{predictedTime}]", PromptPosition.LowerLeft);
             }
         }
-
         [HarmonyPostfix]
         [HarmonyPatch(typeof(NomaiInterfaceOrb), nameof(NomaiInterfaceOrb.StartDragFromPosition))]
         public static void NomaiInterfaceOrb_StartDragFromPosition(NomaiInterfaceOrb __instance) {
