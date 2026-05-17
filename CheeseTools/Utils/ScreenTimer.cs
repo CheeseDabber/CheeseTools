@@ -45,6 +45,10 @@ namespace CheeseTools.Utils {
             ScreenTimerController.Unregister(this);
         }
 
+        public void Reset() {
+            _elapsed = 0f;
+        }
+
         public float GetElapsed() {
             return _elapsed;
         }
@@ -74,10 +78,8 @@ namespace CheeseTools.Utils {
         public static void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene) {
             for (int i = _screenTimers.Count - 1; i >= 0; i--) {
                 ScreenTimer screenTimer = _screenTimers[i];
-                if (screenTimer.prefix == "Village Time: " && newScene == OWScene.SolarSystem && CheeseTools.afterSceneLoad == null) {
-                    Console.Write("Continued village timer");
+                if (screenTimer.prefix == "Village Time: " && newScene == OWScene.SolarSystem && CheeseTools.afterSceneLoad == null)
                     continue;
-                }
 
                 screenTimer.Stop();
             }

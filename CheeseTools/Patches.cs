@@ -214,5 +214,15 @@ namespace CheeseTools {
                 CheeseTools.AddScreenText($"Predicted Instrument Hunt Time: [{predictedTime}]", PromptPosition.LowerLeft);
             }
         }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(NomaiInterfaceOrb), nameof(NomaiInterfaceOrb.StartDragFromPosition))]
+        public static void NomaiInterfaceOrb_StartDragFromPosition(NomaiInterfaceOrb __instance) {
+            if (__instance._orbBody.GetOrigParent()?.name == "PillarRoot" && !__instance._orbBody.IsSuspended() && CheeseTools.IsTimerEnabled("Coordinates Timer") && !CheeseTools.coordinatesTimer.isRunning) {
+                var coordinateInterface = GameObject.Find("WarpController").GetComponent<VesselWarpController>()._coordinateInterface;
+                if (coordinateInterface.CheckEyeCoordinates()) return;
+                CheeseTools.coordinatesTimer.Start();
+            }
+        }
     }
 }

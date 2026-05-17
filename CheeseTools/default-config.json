@@ -55,26 +55,30 @@
 
     "     ": { "type": "separator" },
     "Vessel Practice State": "P+Digit6",
-    "Vessel Clip Practice State": "P+Digit7",
     "Warp Timer": false,
+
+    "      ": { "type": "separator" },
+    "Vessel Clip Practice State": "P+Digit7",
+    "Fill In Eye Coordinates": true,
+    "Coordinates Timer": false,
     "Museum Timer": false,
     "Observe Timer": false,
     "Museum+Observe Timer": false,
 
-    "      ": { "type": "separator" },
+    "       ": { "type": "separator" },
     "Clone Practice State": "P+Digit8",
     "Clone Timer": false,
     "Clone Trees Locator": false,
 
-    "       ": { "type": "separator" },
+    "        ": { "type": "separator" },
     "Instrument Hunt Practice State": "P+Digit9",
     "Cloneboosting Setup": false,
     "Instrument Hunt Timer": false,
     "Predict Instrument Hunt Time": false,
 
     // Custom Practice States
-    "        ": { "type": "separator" },
     "         ": { "type": "separator" },
+    "          ": { "type": "separator" },
     "Custom Practice State 1": "Slash+Digit1",
     "Custom Practice State 1 Body": {
       "type": "selector",
@@ -110,7 +114,7 @@
     "Custom Practice State 1 Spacesuit": false,
     "Custom Practice State 1 Ship": false,
 
-    "          ": { "type": "separator" },
+    "           ": { "type": "separator" },
     "Custom Practice State 2": "Slash+Digit2",
     "Custom Practice State 2 Body": {
       "type": "selector",
@@ -146,7 +150,7 @@
     "Custom Practice State 2 Spacesuit": false,
     "Custom Practice State 2 Ship": false,
 
-    "           ": { "type": "separator" },
+    "            ": { "type": "separator" },
     "Custom Practice State 3": "Slash+Digit3",
     "Custom Practice State 3 Body": {
       "type": "selector",

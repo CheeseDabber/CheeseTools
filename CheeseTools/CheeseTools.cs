@@ -11,10 +11,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // v1.1.0:
-// - fill in eye coordinates setting
-// - coordinates timer
 // - suitless spacesuit
-
 // - give warpcore
 // - give dream lantern
 // - solanum instrument hunt setting
@@ -45,6 +42,7 @@ namespace CheeseTools {
         private static ScreenTimer brambleTimer = new ScreenTimer("Bramble Timer: ");
         private static ScreenTimer feldsparringTimer = new ScreenTimer("Feldsparring Time: ");
         private static ScreenTimer warpTimer = new ScreenTimer("Warp Time: ");
+        public static ScreenTimer coordinatesTimer = new ScreenTimer("Coordinates Time: ");
         private static ScreenTimer museumTimer = new ScreenTimer("Museum Time: ");
         private static ScreenTimer observeTimer = new ScreenTimer("Observe Time: ");
         private static ScreenTimer museumObserveTimer = new ScreenTimer("Museum+Observe Time: ");
@@ -86,18 +84,24 @@ namespace CheeseTools {
             if (newScene == OWScene.SolarSystem) {
                 Locator.GetPlayerSectorDetector().OnEnterSector += OnEnterSector;
                 Locator.GetPlayerSectorDetector().OnExitSector += OnExitSector;
-                bool showSector = ModHelper.Config.GetSettingsValue<bool>("Show Sectors");
-                if (showSector) {
+                atpWarpTransmitter.OnReceiveWarpedBody += OnReceiveWarpedBodyATPTransmitter;
+                atpWarpReceiver.OnReceiveWarpedBody += OnReceiveWarpedBodyATPReceiver;
+                powerOrb = GameObject.Find("PowerSwitchInterface/Prefab_NOM_InterfaceOrb").GetComponent<NomaiInterfaceOrb>();
+
+                if (currentPracticeState != "") {
+                    var coordinateInterface = GameObject.Find("WarpController").GetComponent<VesselWarpController>()._coordinateInterface;
+                    coordinateInterface._lowerPillarSlot.OnSlotActivated += slot => {
+                        if (coordinateInterface.CheckEyeCoordinates()) {
+                            coordinatesTimer.Stop();
+                        }
+                    };
+                }
+
+                if (ModHelper.Config.GetSettingsValue<bool>("Show Sectors")) {
                     foreach (Sector sector in Locator.GetPlayerSectorDetector()._sectorList) {
                         AddScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
                     }
                 }
-
-                if (LoadManager.GetCurrentScene() == OWScene.SolarSystem) {
-                    atpWarpTransmitter.OnReceiveWarpedBody += OnReceiveWarpedBodyATPTransmitter;
-                    atpWarpReceiver.OnReceiveWarpedBody += OnReceiveWarpedBodyATPReceiver;
-                }
-                powerOrb = GameObject.Find("PowerSwitchInterface/Prefab_NOM_InterfaceOrb").GetComponent<NomaiInterfaceOrb>();
             }
             else {
 
@@ -300,29 +304,31 @@ namespace CheeseTools {
                     coordinateInterface._pillarRaised = true;
                     coordinateInterface._updateHeight = false;
 
-                    coordinateInterface._degrees = 240;
-                    coordinateInterface._basePivot.localEulerAngles = Vector3.up * coordinateInterface._degrees;
-                    coordinateInterface._activePanelIndex = 2;
-                    coordinateInterface._rotatingToPanel = false;
-
                     coordinateInterface._upperOrb.RemoveAllLocks();
                     coordinateInterface._upperOrb.AddLock();
                     coordinateInterface._orb._lockCount = 1;
                     coordinateInterface._orb._orbBody.Unsuspend();
 
-                    coordinateInterface._orb._isBeingDragged = false;
-                    coordinateInterface._rotateSlots[1]._occupyingOrb = coordinateInterface._orb;
-                    coordinateInterface._orb.SetOrbPosition(coordinateInterface._rotateSlots[1].transform.position);
+                    if (ModHelper.Config.GetSettingsValue<bool>("Fill In Eye Coordinates")) {
+                        coordinateInterface._degrees = 240;
+                        coordinateInterface._basePivot.localEulerAngles = Vector3.up * coordinateInterface._degrees;
+                        coordinateInterface._activePanelIndex = 2;
+                        coordinateInterface._rotatingToPanel = false;
 
-                    coordinateInterface._gateAnimators[0]._transform.localPosition = coordinateInterface._gateAnimators[0]._origLocalPosition;
-                    coordinateInterface._gateAnimators[1]._transform.localPosition = coordinateInterface._gateAnimators[1]._origLocalPosition;
-                    coordinateInterface._gateAnimators[2]._transform.localPosition = coordinateInterface._gateAnimators[2]._origLocalPosition;
-                    coordinateInterface._gateAnimators[3]._transform.localPosition = coordinateInterface._gateAnimators[3]._origLocalPosition;
-                    coordinateInterface._gateAnimators[3]._transform.localPosition = -coordinateInterface._gateAnimators[3]._transform.forward;
+                        coordinateInterface._orb._isBeingDragged = false;
+                        coordinateInterface._rotateSlots[1]._occupyingOrb = coordinateInterface._orb;
+                        coordinateInterface._orb.SetOrbPosition(coordinateInterface._rotateSlots[1].transform.position);
 
-                    SetCoordinate(coordinateInterface._nodeControllers[0], coordinateInterface._coordinateX);
-                    SetCoordinate(coordinateInterface._nodeControllers[1], coordinateInterface._coordinateY);
-                    SetCoordinate(coordinateInterface._nodeControllers[2], coordinateInterface._coordinateZ);
+                        coordinateInterface._gateAnimators[0]._transform.localPosition = coordinateInterface._gateAnimators[0]._origLocalPosition;
+                        coordinateInterface._gateAnimators[1]._transform.localPosition = coordinateInterface._gateAnimators[1]._origLocalPosition;
+                        coordinateInterface._gateAnimators[2]._transform.localPosition = coordinateInterface._gateAnimators[2]._origLocalPosition;
+                        coordinateInterface._gateAnimators[3]._transform.localPosition = coordinateInterface._gateAnimators[3]._origLocalPosition;
+                        coordinateInterface._gateAnimators[3]._transform.localPosition = -coordinateInterface._gateAnimators[3]._transform.forward;
+
+                        SetCoordinate(coordinateInterface._nodeControllers[0], coordinateInterface._coordinateX);
+                        SetCoordinate(coordinateInterface._nodeControllers[1], coordinateInterface._coordinateY);
+                        SetCoordinate(coordinateInterface._nodeControllers[2], coordinateInterface._coordinateZ);
+                    }
 
                     // if you warp before bundles are loaded the game gets stuck infinitely loading.
                     // so I just forcefully clear it. no clue if this breaks anything
@@ -734,8 +740,8 @@ namespace CheeseTools {
             return true;
         }
 
-        private bool IsTimerEnabled(string str) {
-            return currentPracticeState != "" && ModHelper.Config.GetSettingsValue<bool>(str);
+        public static bool IsTimerEnabled(string str) {
+            return currentPracticeState != "" && instance.ModHelper.Config.GetSettingsValue<bool>(str);
         }
 
         private void CustomPracticeState(int num) {
