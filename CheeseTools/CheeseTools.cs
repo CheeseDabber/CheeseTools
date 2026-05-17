@@ -11,7 +11,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 // v1.1.0:
-// - suitless spacesuit
 // - give warpcore
 // - give dream lantern
 // - solanum instrument hunt setting
@@ -142,6 +141,10 @@ namespace CheeseTools {
 
                     afterSceneLoad();
                     afterSceneLoad = null;
+
+                    if (currentPracticeState != "" && ModHelper.Config.GetSettingsValue<bool>("Suitless Practice States")) {
+                        Locator.GetPlayerSuit().RemoveSuit(true);
+                    }
                 }, 2);
             }
         }
@@ -343,6 +346,13 @@ namespace CheeseTools {
                 });
             }
             else if (keybinds.Get("Instrument Hunt Practice State")?.WasPressedThisFrame() == true) {
+                if (ModHelper.Config.GetSettingsValue<bool>("Menu Storage !RESETS SAVEFILE!")) {
+                    currentPracticeState = "Instrument Hunt Practice State";
+                    PlayerData.ResetGame();
+                    LoadManager.LoadScene(OWScene.EyeOfTheUniverse);
+                    return;
+                }
+
                 LoadEyeScene(EyeState.ForestIsDark, () => {
                     Locator.GetPlayerSuit().SuitUp(false, true);
                     Locator.GetFlashlight().TurnOn();
@@ -380,6 +390,27 @@ namespace CheeseTools {
             }
             else if (keybinds.Get("Custom Practice State 3")?.WasPressedThisFrame() == true) {
                 CustomPracticeState(3);
+            }
+            else if (keybinds.Get("Custom Practice State 4")?.WasPressedThisFrame() == true) {
+                CustomPracticeState(4);
+            }
+            else if (keybinds.Get("Custom Practice State 5")?.WasPressedThisFrame() == true) {
+                CustomPracticeState(5);
+            }
+            else if (keybinds.Get("Custom Practice State 6")?.WasPressedThisFrame() == true) {
+                CustomPracticeState(6);
+            }
+            else if (keybinds.Get("Custom Practice State 7")?.WasPressedThisFrame() == true) {
+                CustomPracticeState(7);
+            }
+            else if (keybinds.Get("Custom Practice State 8")?.WasPressedThisFrame() == true) {
+                CustomPracticeState(8);
+            }
+            else if (keybinds.Get("Custom Practice State 9")?.WasPressedThisFrame() == true) {
+                CustomPracticeState(9);
+            }
+            else if (keybinds.Get("Custom Practice State 10")?.WasPressedThisFrame() == true) {
+                CustomPracticeState(10);
             }
             // dev keybinds for testing
             //else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
@@ -449,6 +480,13 @@ namespace CheeseTools {
             keybinds.Add("Custom Practice State 1", "Slash+Digit1");
             keybinds.Add("Custom Practice State 2", "Slash+Digit2");
             keybinds.Add("Custom Practice State 3", "Slash+Digit3");
+            keybinds.Add("Custom Practice State 4", "Slash+Digit4");
+            keybinds.Add("Custom Practice State 5", "Slash+Digit5");
+            keybinds.Add("Custom Practice State 6", "Slash+Digit6");
+            keybinds.Add("Custom Practice State 7", "Slash+Digit7");
+            keybinds.Add("Custom Practice State 8", "Slash+Digit8");
+            keybinds.Add("Custom Practice State 9", "Slash+Digit9");
+            keybinds.Add("Custom Practice State 10", "Slash+Digit0");
             keybinds.ResetKeybindsToDefaultOnDuplicate();
 
             if (Locator.GetPlayerBody() == null) return;
