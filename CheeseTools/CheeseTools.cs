@@ -10,9 +10,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
-//v1.1.1
-// - fix inputfade not always resetting on scene loads
-
 //v1.2.0
 // - custom practice states json
 // - log player location json
@@ -694,6 +691,7 @@ namespace CheeseTools {
             PlayerData.SaveWarpedToTheEye(TimeLoop.GetSecondsRemaining());
             LoadManager.LoadScene(OWScene.EyeOfTheUniverse);
             CheeseTools.afterSceneLoad = afterSceneLoad;
+            skipWakeUpAnim = true;
             afterSceneLoadEyeState = eyeState;
         }
 

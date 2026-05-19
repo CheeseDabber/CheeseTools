@@ -21,7 +21,8 @@ namespace CheeseTools {
             if (CheeseTools.afterSceneLoad != null && CheeseTools.skipWakeUpAnim) {
                 __instance.ChangeInputMode(InputMode.Character);
                 __instance._inputFadeFraction = 1f;
-                GlobalMessenger.FireEvent("TakeFirstFlashbackSnapshot");
+                if (LoadManager.GetCurrentScene() == OWScene.SolarSystem)
+                    GlobalMessenger.FireEvent("TakeFirstFlashbackSnapshot");
                 return false;
             }
             return true;
