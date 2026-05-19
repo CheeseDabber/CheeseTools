@@ -10,8 +10,20 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
-// Bugs:
-// - inputfade not always resetting on scene loads
+//v1.1.1
+// - fix inputfade not always resetting on scene loads
+
+//v1.2.0
+// - custom practice states json
+// - log player location json
+// - custom practice state stranger support
+// - custom practice state eye of the universe support
+// - custom practice state dreamworld support
+// - maybe make custom practice state code less repetitive
+// - maybe change relativebody getcurrent to closest astroobject instead of passive reference frame but idk
+
+//v2.0.0
+// - savestates
 
 namespace CheeseTools {
     public class CheeseTools : ModBehaviour {
@@ -23,6 +35,7 @@ namespace CheeseTools {
         public static string currentPracticeState = "";
         public static Action afterSleepUntil;
         public static double wakeUpTime = 0;
+        public static float speedupTimeScale = 51f;
 
         private static string version = "1.1.0";
         private static ScreenPrompt watermark = new ScreenPrompt($"CheeseTools v{version}: Enabled");
@@ -432,7 +445,7 @@ namespace CheeseTools {
                     RemoveSpacesuit(false);
             }
             else if (keybinds.Get("Toggle Speedup")?.WasPressedThisFrame() == true) {
-                ToggleSpeedUp();
+                ToggleSpeedup();
             }
             else if (keybinds.Get("Log Player Location")?.WasPressedThisFrame() == true) {
                 OWRigidbody relativeBody = RelativeBody.GetCurrent();
@@ -629,7 +642,6 @@ namespace CheeseTools {
 
         public static void EquipSpacesuit(bool instant) {
             Locator.GetPlayerSuit().SuitUp(false, instant);
-            if (!instant) return;
             Locator.GetPlayerTransform().GetComponent<PlayerResources>()._jetpackThruster.DebugResetBoostCharge();
         }
 
@@ -712,8 +724,8 @@ namespace CheeseTools {
             return closest;
         }
 
-        public static void ToggleSpeedUp() {
-            OWTime.SetTimeScale(OWTime.GetTimeScale() == 1f ? 50f : 1f);
+        public static void ToggleSpeedup() {
+            OWTime.SetTimeScale(OWTime.GetTimeScale() != speedupTimeScale ? speedupTimeScale : 1f);
         }
 
         public static ScreenPrompt GetScreenPrompt(string text, PromptPosition position) {

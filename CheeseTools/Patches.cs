@@ -129,15 +129,16 @@ namespace CheeseTools {
                     return false;
                 }
                 if (!OWTime.IsPaused()) {
+                    // cheesetools logic
                     if (CheeseTools.afterSleepUntil != null) {
-                        // cheesetools logic
                         if (TimeLoop.GetSecondsElapsed() < CheeseTools.wakeUpTime) {
                             __instance._fastForwardMultiplier = Mathf.Clamp((float)CheeseTools.wakeUpTime - TimeLoop.GetSecondsElapsed(), 2f, 50f);
                             OWTime.SetTimeScale(__instance._fastForwardMultiplier);
-                        } else if (!OWTime.IsPaused()) {
+                        }
+                        else if (!OWTime.IsPaused()) {
                             OWTime.Pause(OWTime.PauseType.Sleeping);
                         }
-                    } else {
+                    } else if (OWTime.GetTimeScale() != CheeseTools.speedupTimeScale) {
                         // outer wilds logic
                         __instance._fastForwardMultiplier = Mathf.MoveTowards(__instance._fastForwardMultiplier, 10f, 2f * Time.unscaledDeltaTime);
                         OWTime.SetTimeScale(__instance._fastForwardMultiplier);
@@ -165,6 +166,11 @@ namespace CheeseTools {
                 __instance._stringBuilder.Append(num2.ToString("D2"));
                 __instance._stringBuilder.Append(":");
                 __instance._stringBuilder.Append(num3.ToString("D2"));
+
+                if (OWTime.GetTimeScale() == CheeseTools.speedupTimeScale) {
+                    __instance._stringBuilder.Append("\nSpeedup Enabled");
+                }
+
                 __instance._text.text = __instance._stringBuilder.ToString();
             }
             float a = Mathf.Clamp01((Time.unscaledTime - __instance._sleepStartTimeUnscaled) / 3f);
