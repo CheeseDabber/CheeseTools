@@ -11,6 +11,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 //v1.2.0
+// - make feldsparring timer not start when doing vessel practice state
+// - also do this for warp time when doing vessel clip probably
 // - custom practice states json
 // - log player location json
 // - custom practice state stranger support
@@ -101,6 +103,10 @@ namespace CheeseTools {
                             coordinatesTimer.Stop();
                         }
                     };
+                }
+
+                if (ModHelper.Config.GetSettingsValue<bool>("Learn Quantum Frequency")) {
+                    PlayerData.LearnFrequency(SignalFrequency.Quantum);
                 }
 
                 if (ModHelper.Config.GetSettingsValue<bool>("Show Sectors")) {
@@ -510,6 +516,10 @@ namespace CheeseTools {
             if (Locator.GetPlayerBody() == null) return;
             UpdateInvincibility();
             UpdateSectorText();
+
+            if (ModHelper.Config.GetSettingsValue<bool>("Learn Quantum Frequency")) {
+                PlayerData.LearnFrequency(SignalFrequency.Quantum);
+            }
         }
 
         public void OnPracticeState(string practiceState) {
