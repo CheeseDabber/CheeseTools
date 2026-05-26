@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OWML.ModHelper;
 using System;
 using UnityEngine;
 
@@ -237,6 +238,13 @@ namespace CheeseTools {
                 var coordinateInterface = GameObject.Find("WarpController").GetComponent<VesselWarpController>()._coordinateInterface;
                 if (coordinateInterface.CheckEyeCoordinates()) return;
                 CheeseTools.coordinatesTimer.Start();
+            }
+        }
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Menu), nameof(Menu.EnableMenu))]
+        public static void Menu_EnableMenu() {
+            if (CheeseTools.instance.ModHelper.Config.GetSettingsValue<bool>("Original Quit Menu Button Position")) {
+                GameObject.Find("Button-ExitToMainMenu")?.transform?.SetSiblingIndex(4);
             }
         }
     }
