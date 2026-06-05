@@ -10,20 +10,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
-//v1.2.0
-// - make feldsparring timer not start when doing vessel practice state
-// - also do this for warp time when doing vessel clip probably
-// - custom practice states json
-// - log player location json
-// - custom practice state stranger support
-// - custom practice state eye of the universe support
-// - custom practice state dreamworld support
-// - maybe make custom practice state code less repetitive
-// - maybe change relativebody getcurrent to closest astroobject instead of passive reference frame but idk
-
-//v2.0.0
-// - savestates
-
 namespace CheeseTools {
     public class CheeseTools : ModBehaviour {
         public static CheeseTools instance;
@@ -359,9 +345,15 @@ namespace CheeseTools {
                 });
             }
             else if (keybinds.Get("Instrument Hunt Practice State")?.WasPressedThisFrame() == true) {
+                currentPracticeState = "Instrument Hunt Practice State";
+
                 if (ModHelper.Config.GetSettingsValue<bool>("Menu Storage !RESETS SAVEFILE!")) {
-                    currentPracticeState = "Instrument Hunt Practice State";
                     PlayerData.ResetGame();
+
+                    PlayerData.SetPersistentCondition("MET_SOLANUM", ModHelper.Config.GetSettingsValue<bool>("Solanum"));
+                    if (EntitlementsManager.IsDlcOwned() == EntitlementsManager.AsyncOwnershipStatus.Owned)
+                        PlayerData.SetPersistentCondition("MET_PRISONER", ModHelper.Config.GetSettingsValue<bool>("Prisoner"));
+
                     LoadManager.LoadScene(OWScene.EyeOfTheUniverse);
                     return;
                 }
