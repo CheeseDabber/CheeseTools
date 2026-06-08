@@ -34,6 +34,18 @@
         "Reservoir"
       ]
     },
+    "Toggle Bonk": "Slash+P",
+    "Bonk Type": {
+      "type": "selector",
+      "value": "Ship",
+      "options": [
+        "Ship",
+        "Shuttle",
+        "Stranger",
+        "HEL",
+        "0g Cave"
+      ]
+    },
     "Give Warp Core": "I+Digit1",
     "Give Dream Lantern": "I+Digit2",
 

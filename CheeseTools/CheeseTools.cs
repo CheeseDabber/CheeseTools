@@ -28,6 +28,13 @@ namespace CheeseTools {
         private static EyeState afterSceneLoadEyeState;
         private static NomaiWarpTransmitter atpWarpTransmitter => GameObject.Find("Prefab_NOM_WarpTransmitter (1)")?.GetComponent<NomaiWarpTransmitter>();
         private static NomaiWarpReceiver atpWarpReceiver => GameObject.Find("Interactibles_TimeLoopRing_Hidden/Prefab_NOM_WarpReceiver").GetComponent<NomaiWarpReceiver>();
+        private static NomaiInterfaceOrb powerOrb;
+
+        private static ScreenPrompt shipBonkPrompt = new ScreenPrompt("Ship Bonk: Enabled");
+        private static ScreenPrompt shuttleBonkPrompt = new ScreenPrompt("Shuttle Bonk: Enabled");
+        private static ScreenPrompt helBonkPrompt = new ScreenPrompt("HEL Bonk: Enabled");
+        private static ScreenPrompt strangerBonkPrompt = new ScreenPrompt("Stranger Bonk: Enabled");
+        private static ScreenPrompt caveBonkPrompt = new ScreenPrompt("0g Cave Bonk: Enabled");
 
         private static ScreenTimer villageTimer = new ScreenTimer("Village Time: ");
         private static ScreenTimer atpEnterTimer = new ScreenTimer("ATP Enter Time: ");
@@ -42,8 +49,6 @@ namespace CheeseTools {
         private static ScreenTimer museumObserveTimer = new ScreenTimer("Museum+Observe Time: ");
         private static ScreenTimer cloneTimer = new ScreenTimer("Clone Time: ");
         public static ScreenTimer instrumentTimer = new ScreenTimer("Instrument Hunt Time: ");
-
-        private static NomaiInterfaceOrb powerOrb;
 
         public void Awake() {
             instance = this;
@@ -423,12 +428,6 @@ namespace CheeseTools {
             }
             // dev keybinds for testing
             //else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F1].wasPressedThisFrame) {
-            //  OWRigidbody relativeBody = RelativeBody.GetCurrent();
-            //  RelativeBody.PrintRelativeLocation("Ship Location:\n", relativeBody, new RelativeLocationData(Locator.GetShipBody(), relativeBody));
-            //  Console.WriteLine("Ship Speed: " + Locator.GetShipBody().GetVelocity().magnitude);
-            //}
-            //else if (Keyboard.current[Key.Slash].IsPressed() && Keyboard.current[Key.F2].wasPressedThisFrame) {
-            //    RelativeBody.PrintAllBodyNames();
             //}
 
             if (Locator.GetPlayerBody() == null) return;
@@ -451,6 +450,49 @@ namespace CheeseTools {
             }
             else if (keybinds.Get("Give Warp Core")?.WasPressedThisFrame() == true) {
                 Items.PickUpItem(Items.GetWarpCore());
+            }
+
+            if (LoadManager.GetCurrentScene() == OWScene.SolarSystem) {
+                if (keybinds.Get("Toggle Bonk")?.WasPressedThisFrame() == true) {
+                    string type = ModHelper.Config.GetSettingsValue<string>("Bonk Type");
+                    if (type == "Ship") {
+                        if (ToggleBonk(shipBonkPrompt, GameObject.Find("ShipGravityEntryTrigger").GetComponent<EntrywayTrigger>(), GameObject.Find("ShipGeneralEntryTrigger").GetComponent<EntrywayTrigger>())) {
+                            PlayerState._isAttached = true;
+                            HatchController hatchController = GameObject.FindObjectOfType<HatchController>();
+                            hatchController.OpenHatch();
+                            ShipTractorBeamSwitch tractorBeam = GameObject.FindObjectOfType<ShipTractorBeamSwitch>();
+                            tractorBeam.DeactivateTractorBeam();
+                        } else {
+                            PlayerState._isAttached = false;
+                            HatchController hatchController = GameObject.FindObjectOfType<HatchController>();
+                            hatchController.OpenHatch();
+                            ShipTractorBeamSwitch tractorBeam = GameObject.FindObjectOfType<ShipTractorBeamSwitch>();
+                            tractorBeam.ActivateTractorBeam();
+                        }
+                    }
+                    else if (type == "Shuttle") {
+                        ToggleBonk(shuttleBonkPrompt, GameObject.Find("ShuttleVolume/EntrywayTrigger").GetComponent<EntrywayTrigger>());
+                    }
+                    else if (type == "HEL") {
+                        ToggleBonk(helBonkPrompt, GameObject.Find("EntrywayTrigger_TLE_1").GetComponent<EntrywayTrigger>());
+                    }
+                    else if (type == "Stranger" && EntitlementsManager.IsDlcOwned() == EntitlementsManager.AsyncOwnershipStatus.Owned) {
+                        OWTriggerVolume volume = GameObject.Find("RingInteriorSectorTriggerVolume").GetComponent<OWTriggerVolume>();
+                        if (!Locator.GetPromptManager().GetScreenPromptList(PromptPosition.LowerLeft).Contains(strangerBonkPrompt)) {
+                            Locator.GetPromptManager().AddScreenPrompt(strangerBonkPrompt, PromptPosition.LowerLeft, true);
+                            volume.AddObjectToVolume(Locator.GetPlayerDetector());
+                            volume.AddObjectToVolume(Locator.GetPlayerCameraDetector());
+                        }
+                        else {
+                            Locator.GetPromptManager().RemoveScreenPrompt(strangerBonkPrompt);
+                            volume.RemoveObjectFromVolume(Locator.GetPlayerDetector());
+                            volume.RemoveObjectFromVolume(Locator.GetPlayerCameraDetector());
+                        }
+                    }
+                    else if (type == "0g Cave") {
+                        ToggleBonk(caveBonkPrompt, GameObject.Find("EntryWayTrigger_ZeroGCave").GetComponent<EntrywayTrigger>());
+                    }
+                }
             }
 
             if (EntitlementsManager.IsDlcOwned() != EntitlementsManager.AsyncOwnershipStatus.Owned) return;
@@ -480,6 +522,8 @@ namespace CheeseTools {
             keybinds.Add("Toggle Speedup", "Slash+U");
             keybinds.Add("Enter/Exit DreamWorld", "Slash+I");
             keybinds.Add("Log Player Location", "Slash+O");
+            keybinds.Add("Toggle Bonk", "Slash+P");
+
             keybinds.Add("Give Warp Core", "I+Digit1");
             keybinds.Add("Give Dream Lantern", "I+Digit2");
 
@@ -810,6 +854,23 @@ namespace CheeseTools {
 
         public static bool IsTimerEnabled(string str) {
             return currentPracticeState != "" && instance.ModHelper.Config.GetSettingsValue<bool>(str);
+        }
+
+        private bool ToggleBonk(ScreenPrompt prompt, params EntrywayTrigger[] triggers) {
+            if (!Locator.GetPromptManager().GetScreenPromptList(PromptPosition.LowerLeft).Contains(prompt)) {
+                Locator.GetPromptManager().AddScreenPrompt(prompt, PromptPosition.LowerLeft, true);
+                foreach (EntrywayTrigger trigger in triggers) {
+                    trigger.ForceEntry(Locator.GetPlayerDetector());
+                    trigger.ForceEntry(Locator.GetPlayerCameraDetector());
+                }
+                return true;
+            }
+            Locator.GetPromptManager().RemoveScreenPrompt(prompt);
+            foreach (EntrywayTrigger trigger in triggers) {
+                trigger.ForceExit(Locator.GetPlayerDetector());
+                trigger.ForceExit(Locator.GetPlayerCameraDetector());
+            }
+            return false;
         }
 
         private void CustomPracticeState(int num) {
