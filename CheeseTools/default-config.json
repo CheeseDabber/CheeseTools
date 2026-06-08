@@ -25,7 +25,6 @@
     "Teleport Ship To Player": "Slash+Y",
     "Toggle Speedup": "Slash+U",
     "Enter/Exit DreamWorld": "Slash+I",
-    "Log Player Location": "Slash+O",
     "DreamWorld Enter Campfire": {
       "type": "selector",
       "value": "Cinder Isles",
@@ -36,6 +35,7 @@
         "Reservoir"
       ]
     },
+    "Log Player Location": "Slash+O",
     "Toggle Bonk": "Slash+P",
     "Bonk Type": {
       "type": "selector",

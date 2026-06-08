@@ -12,12 +12,17 @@ SpeedTools has been an absolute vital tool in the speedrunning scene but unfortu
 **Infinite Oxygen:** Toggle infinite oxygen.  
 **Player Invincibility:** Toggle player invincibility.  
 **Ship Invincibility:** Toggle ship invincibility.  
-**Create Launch Codes Save:** When enabled upon quitting to main menu it overwrites your current save with one where the loop has started (substitute for the autosplitter "Auto delete progression while keeping Launch Codes" setting).  
 **Show Loop Time:** Shows the loop time.  
+**Freeze Supernova:** Stops the sun from exploding.  
+**Create Launch Codes Save:** When enabled upon quitting to main menu it overwrites your current save with one where the loop has started (substitute for the autosplitter "Auto delete progression while keeping Launch Codes" setting).  
+**No Alt Tab Pause:** Allows the game to run in the background.  
 **Mark Stranger:** Marks the location of the stranger.  
+**Learn Quantum Frequency:** Learns the quantum frequency.  
 **Suitless Practice States:** Makes all practice states suitless.  
 **Show Sectors:** Shows current loaded sectors.  
+**Original Quit Menu Button Position:** Puts the quit menu button back to the third position. Useful for when you use keybinds to quit out.  
 **Enter Dreamworld Campfire:** Choose dreamworld enter campfire.  
+**Bonk Type:** Choose bonk type.  
 
 ### Keybinds
 Keybinds in this mod work as text with a `+` separating each key. To edit keybinds you might find the following setting useful.  
@@ -30,6 +35,7 @@ Keybinds in this mod work as text with a `+` separating each key. To edit keybin
 `/ + U` | Toggle Speedup
 `/ + I` | Enter/Exit Dreamworld
 `/ + O` | Log Player Location
+`/ + P` | Toggle Selected Bonk
 `I + 1` | Give Warp Core
 `I + 2` | Give Dream Lantern
 
@@ -60,9 +66,9 @@ _Note: This should not be equal to your ATP sleep time as in a run the loop star
 **Vessel Clip Practice State:** `P + 7`  
 **Fill In Eye Coordinates:** Fills in eye coordinates.  
 **Coordinates Timer:** Starts when dragging the coordinate orb. Stops when putting the orb in lower pillar activation slot.  
-**Museum Timer:** Starts upon having warped to the eye. Stops upon being teleported to the museum.  
-**Observe Timer:** Starts upon being teleported to the museum. Stops when observing.  
-**Museum+Observe Timer:** Starts upon having warped to the eye. Stops when observing.  
+**Observe Flight Timer:** Starts upon having warped to the eye. Stops upon being teleported to the museum.  
+**Observatory Timer:** Starts upon being teleported to the museum. Stops when observing.  
+**Observe Timer:** Starts upon having warped to the eye. Stops when observing.  
 ### Clone
 **Clone Practice State:** `P + 8`  
 **Clone Trees Locator:** Marks standing spot between the three trees.  
