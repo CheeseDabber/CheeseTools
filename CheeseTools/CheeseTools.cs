@@ -551,6 +551,7 @@ namespace CheeseTools {
             keybinds.ResetKeybindsToDefaultOnDuplicate();
 
             freezeSupernova = config.GetSettingsValue<bool>("Freeze Supernova");
+            Application.runInBackground = config.GetSettingsValue<bool>("No Alt Tab Pause");
 
             if (Locator.GetPlayerBody() == null) return;
             UpdateInvincibility();
