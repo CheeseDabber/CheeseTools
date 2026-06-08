@@ -219,6 +219,11 @@ namespace CheeseTools {
             RumbleManager.StopJetpackBoost();
             return false;
         }
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(SunController), nameof(SunController.Update))]
+        public static bool SunController_Update() {
+            return !CheeseTools.freezeSupernova;
+        }
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(CosmicInflationController), nameof(CosmicInflationController.UpdateFormation))]

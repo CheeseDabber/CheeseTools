@@ -21,6 +21,7 @@ namespace CheeseTools {
         public static Action afterSleepUntil;
         public static double wakeUpTime = 0;
         public static float speedupTimeScale = 51f;
+        public static bool freezeSupernova = false;
 
         private static string version = "1.1.1";
         private static ScreenPrompt watermark = new ScreenPrompt($"CheeseTools v{version}: Enabled");
@@ -122,7 +123,7 @@ namespace CheeseTools {
             }
             if (newScene == OWScene.TitleScreen) {
                 currentPracticeState = "";
-                if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!") && (previousScene == OWScene.SolarSystem || previousScene == OWScene.EyeOfTheUniverse)) {
+                if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !RESETS SAVEFILE!") && (previousScene == OWScene.SolarSystem || previousScene == OWScene.EyeOfTheUniverse)) {
                     PlayerData.ResetGame();
                     PlayerData.LearnLaunchCodes();
                     PlayerData.SaveLoopCount(3);
@@ -186,7 +187,7 @@ namespace CheeseTools {
 
             if (keybinds.Get("Fast Load New Expedition")?.WasPressedThisFrame() == true) {
                 currentPracticeState = "";
-                if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !OVERWRITES SAVEFILE!")) {
+                if (ModHelper.Config.GetSettingsValue<bool>("Create Launch Codes Save !RESETS SAVEFILE!")) {
                     PlayerData.ResetGame();
                     PlayerData.LearnLaunchCodes();
                     PlayerData.SaveLoopCount(3);
@@ -548,6 +549,8 @@ namespace CheeseTools {
             keybinds.Add("Custom Practice State 9", "Slash+Digit9");
             keybinds.Add("Custom Practice State 10", "Slash+Digit0");
             keybinds.ResetKeybindsToDefaultOnDuplicate();
+
+            freezeSupernova = config.GetSettingsValue<bool>("Freeze Supernova");
 
             if (Locator.GetPlayerBody() == null) return;
             UpdateInvincibility();
