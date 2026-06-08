@@ -78,9 +78,9 @@
     "Vessel Clip Practice State": "P+Digit7",
     "Fill In Eye Coordinates": true,
     "Coordinates Timer": false,
-    "Museum Timer": false,
+    "Observe Flight Timer": false,
+    "Observatory Timer": false,
     "Observe Timer": false,
-    "Museum+Observe Timer": false,
 
     "         ": { "type": "separator" },
     "Clone Practice State": "P+Digit8",

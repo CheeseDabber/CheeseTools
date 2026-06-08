@@ -44,9 +44,9 @@ namespace CheeseTools {
         private static ScreenTimer feldsparringTimer = new ScreenTimer("Feldsparring Time: ");
         private static ScreenTimer warpTimer = new ScreenTimer("Warp Time: ");
         public static ScreenTimer coordinatesTimer = new ScreenTimer("Coordinates Time: ");
-        private static ScreenTimer museumTimer = new ScreenTimer("Museum Time: ");
+        private static ScreenTimer observeFlightTimer = new ScreenTimer("Observe Flight Time: ");
+        private static ScreenTimer observatoryTimer = new ScreenTimer("Observatory Time: ");
         private static ScreenTimer observeTimer = new ScreenTimer("Observe Time: ");
-        private static ScreenTimer museumObserveTimer = new ScreenTimer("Museum+Observe Time: ");
         private static ScreenTimer cloneTimer = new ScreenTimer("Clone Time: ");
         public static ScreenTimer instrumentTimer = new ScreenTimer("Instrument Hunt Time: ");
 
@@ -111,10 +111,10 @@ namespace CheeseTools {
             }
             if (newScene == OWScene.EyeOfTheUniverse) {
                 if (Locator.GetEyeStateManager().GetState() == EyeState.AboardVessel && currentPracticeState != "Clone Practice State") {
-                    if (IsTimerEnabled("Museum Timer"))
-                        museumTimer.Start();
-                    if (IsTimerEnabled("Museum+Observe Timer"))
-                        museumObserveTimer.Start();
+                    if (IsTimerEnabled("Observe Timer"))
+                        observeTimer.Start();
+                    if (IsTimerEnabled("Observe Flight Timer"))
+                        observeFlightTimer.Start();
                 }
             }
             else {
@@ -352,8 +352,6 @@ namespace CheeseTools {
                 });
             }
             else if (keybinds.Get("Instrument Hunt Practice State")?.WasPressedThisFrame() == true) {
-                currentPracticeState = "Instrument Hunt Practice State";
-
                 if (ModHelper.Config.GetSettingsValue<bool>("Menu Storage !RESETS SAVEFILE!")) {
                     PlayerData.ResetGame();
 
@@ -578,14 +576,14 @@ namespace CheeseTools {
                 RemoveMarker("Trees Location");
             }
             if (state == EyeState.Observatory) {
-                museumTimer.Stop();
-                if (IsTimerEnabled("Observe Timer")) {
-                    observeTimer.Start();
+                observeFlightTimer.Stop();
+                if (IsTimerEnabled("Observatory Timer")) {
+                    observatoryTimer.Start();
                 }
             }
             if (state == EyeState.ZoomOut) {
+                observatoryTimer.Stop();
                 observeTimer.Stop();
-                museumObserveTimer.Stop();
                 if (IsTimerEnabled("Clone Timer")) {
                     cloneTimer.Start();
                 }
@@ -615,14 +613,14 @@ namespace CheeseTools {
                 AddScreenText(sector.gameObject.name, PromptPosition.BottomCenter);
             }
             if (sector.name == "Sector_AnglerNestDimension") {
-                if (IsTimerEnabled("Ultimate Feldsparring Timer")) {
+                if (IsTimerEnabled("Ultimate Feldsparring Timer") && currentPracticeState != "Vessel Practice State") {
                     feldsparringTimer.Start();
                 }
             }
             else if (sector.name == "Sector_VesselDimension") {
                 feldsparringTimer.Stop();
                 brambleTimer.Stop();
-                if (IsTimerEnabled("Warp Timer")) {
+                if (IsTimerEnabled("Warp Timer") && currentPracticeState != "Vessel Clip Practice State") {
                     warpTimer.Start();
                 }
             }
