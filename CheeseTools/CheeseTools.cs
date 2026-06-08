@@ -23,7 +23,7 @@ namespace CheeseTools {
         public static float speedupTimeScale = 51f;
         public static bool freezeSupernova = false;
 
-        private static string version = "1.1.1";
+        private static string version = "1.2.0";
         private static ScreenPrompt watermark = new ScreenPrompt($"CheeseTools v{version}: Enabled");
         private static ScreenPrompt loopTimeText = new ScreenPrompt("");
         private static EyeState afterSceneLoadEyeState;
