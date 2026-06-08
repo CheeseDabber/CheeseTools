@@ -273,6 +273,8 @@ namespace CheeseTools {
                     Teleportation.TeleportBodyTo(ship, Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody(), shipLocation);
                     ship.SetVelocity(Locator.GetAstroObject(AstroObject.Name.DarkBramble).GetOWRigidbody().GetVelocity() + ship.transform.forward * ModHelper.Config.GetSettingsValue<int>("Ultimate Feldsparring Ship Speed"));
                     Items.PickUpItem(Items.GetWarpCore());
+                    ReferenceFrame referenceFrame = GameObject.Find("RFVolume_DB").GetComponent<ReferenceFrameVolume>().GetReferenceFrame();
+                    Locator.GetPlayerBody().GetComponent<ReferenceFrameTracker>().TargetReferenceFrame(referenceFrame);
                 });
             }
             else if (keybinds.Get("Vessel Practice State")?.WasPressedThisFrame() == true) {
