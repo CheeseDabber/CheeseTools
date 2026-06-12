@@ -3,7 +3,7 @@
 # CheeseTools by CheeseRunner1
 CheeseTools is a mod for practicing Outer Wilds speedrunning.
 
-I want to thank [SpeedTools](https://github.com/GrimLala/SpeedTools), the first speedrunning mod, for all the inspiration.
+I want to thank [SpeedTools](https://outerwildsmods.com/mods/speedtools/), the first speedrunning mod, for all the inspiration.
 SpeedTools has been an absolute vital tool in the speedrunning scene but unfortunately the mod has been mostly abandoned and lately more and more things have started breaking. Many felt a new speedrunning mod was needed which is why I decided to make CheeseTools.
 
 ## Features

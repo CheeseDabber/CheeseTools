@@ -80,6 +80,7 @@ namespace CheeseTools {
         public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene) {
             //Console.WriteLine($"previousScene: {previousScene}, newScene: {newScene}");
             afterSleepUntil = null;
+            NotificationManager.SharedInstance.ClearAllNotifications();
 
             if (newScene == OWScene.SolarSystem) {
                 Locator.GetPlayerSectorDetector().OnEnterSector += OnEnterSector;
@@ -372,7 +373,6 @@ namespace CheeseTools {
                     EquipSpacesuit(true);
                     Locator.GetFlashlight().TurnOn();
                     Locator.GetToolModeSwapper().GetSignalScope()._targetFOV = 60f;
-                    NotificationManager.SharedInstance.ClearAllNotifications();
 
                     Quaternion playerOrientation;
                     if (ModHelper.Config.GetSettingsValue<bool>("Cloneboosting Setup")) {
