@@ -231,7 +231,7 @@ namespace CheeseTools {
             if (!CheeseTools.instrumentTimer.isRunning || !CheeseTools.instance.ModHelper.Config.GetSettingsValue<bool>("Predict Instrument Hunt Time")) return;
 
             if (__instance._finishFormationTime >= 0f && __instance._startFormationTime == Time.time) {
-                float bigBangTime = 37f; // scout boosting to big bang is considered but times can vary. this is just an estimation.
+                float bigBangTime = 36.9f; // scout boosting to big bang is considered but times can vary. this is just an estimation.
                 string predictedTime = TimeSpan.FromSeconds(CheeseTools.instrumentTimer.GetElapsed() + (__instance._finishFormationTime - __instance._startFormationTime) + bigBangTime).ToString(@"m\:ss\.ff");
                 CheeseTools.AddScreenText($"Predicted Instrument Hunt Time: [{predictedTime}]", PromptPosition.LowerLeft);
             }
